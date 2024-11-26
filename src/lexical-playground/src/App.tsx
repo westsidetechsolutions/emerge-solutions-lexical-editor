@@ -17,7 +17,7 @@ import {SettingsContext, useSettings} from './context/SettingsContext';
 import {SharedAutocompleteContext} from './context/SharedAutocompleteContext';
 import {SharedHistoryContext} from './context/SharedHistoryContext';
 import Editor from './Editor';
-import logo from './images/logo.svg';
+import logo from './images/emerge.png';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import PasteLogPlugin from './plugins/PasteLogPlugin';
 import {TableContext} from './plugins/TablePlugin';
@@ -64,7 +64,7 @@ function App(): JSX.Element {
           <SharedAutocompleteContext>
             <header>
               <a href="https://lexical.dev" target="_blank" rel="noreferrer">
-                <Image src={logo} alt="Lexical Logo" width={100} height={40} />
+                <Image src={logo} alt="Lexical Logo" width={400} height={120} />
               </a>
             </header>
             <div className="editor-shell">
