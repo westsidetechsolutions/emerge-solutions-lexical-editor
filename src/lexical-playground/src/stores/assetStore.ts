@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, PersistStorage } from 'zustand/middleware'
 
 export interface Asset {
   id: string
@@ -39,34 +39,6 @@ type StorageValue<T> = {
   state: T;
 };
 
-// Create a custom storage that handles large assets
-const createCustomStorage = () => {
-  const storage = createJSONStorage(() => localStorage)
-  if (!storage) {
-    throw new Error("Storage is not initialized");
-  }
-  return {
-    ...storage,
-    setItem: (key: string, value: string) => {
-      try {
-        return storage.setItem(key, value as any)
-      } catch (e: any) {
-        // If quota exceeded, try removing assets from the stored value
-        if (e.name === 'QuotaExceededError') {
-          const parsed = JSON.parse(value)
-          const cleanTree = removeAssetUrls(parsed.state.tree)
-          const cleanState = {
-            ...parsed.state,
-            tree: cleanTree
-          }
-          return storage.setItem(key, JSON.stringify({ state: cleanState }) as any)
-        }
-        throw e
-      }
-    }
-  }
-}
-
 // Helper function to remove asset URLs from the tree
 const removeAssetUrls = (folder: Folder): Folder => {
   return {
@@ -82,6 +54,44 @@ const removeAssetUrls = (folder: Folder): Folder => {
         url: '' // Don't persist the URL
       }
     })
+  }
+}
+
+// Create a custom storage that handles large assets
+const createCustomStorage = (): PersistStorage<AssetState> => {
+  return {
+    getItem: (key: string) => {
+      const value = localStorage.getItem(key)
+      if (value) {
+        return JSON.parse(value) as StorageValue<AssetState>
+      }
+      return null
+    },
+    setItem: (key: string, value: StorageValue<AssetState>) => {
+      try {
+        // Attempt to store the value as is
+        localStorage.setItem(key, JSON.stringify(value))
+      } catch (e: any) {
+        // If quota exceeded, try removing assets from the stored value
+        if (e.name === 'QuotaExceededError') {
+          try {
+            const cleanTree = removeAssetUrls(value.state.tree)
+            const cleanState: AssetState = {
+              ...value.state,
+              tree: cleanTree
+            }
+            localStorage.setItem(key, JSON.stringify({ state: cleanState }))
+          } catch (parseError) {
+            console.error('Failed to clean storage:', parseError)
+          }
+        } else {
+          throw e
+        }
+      }
+    },
+    removeItem: (key: string) => {
+      localStorage.removeItem(key)
+    },
   }
 }
 
@@ -221,7 +231,7 @@ export const useAssetStore = create<AssetState>()(
     }),
     {
       name: 'asset-storage',
-      storage: createCustomStorage()
+      storage: createCustomStorage(),
     }
   )
 ) 
