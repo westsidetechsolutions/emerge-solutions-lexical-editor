@@ -1,37 +1,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
 import FileInput from '../../ui/FileInput';
 import TextInput from '../../ui/TextInput';
 import './AssetManager.css';
-
-interface Asset {
-  id: string;
-  name: string;
-  url: string;
-}
-
-interface Folder {
-  id: string;
-  name: string;
-  children: Array<Folder | Asset>;
-  isExpanded?: boolean;
-}
+import { useAssetStore } from '../../stores/assetStore'
 
 interface AssetManagerProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (asset: Asset) => void;
 }
-
-const initialTree: Folder = {
-  id: 'root',
-  name: 'Root',
-  children: [],
-};
 
 const FolderTreeItem = ({
   folder,
@@ -40,6 +22,7 @@ const FolderTreeItem = ({
   onFolderSelect,
   onFolderToggle,
   onFolderRename,
+  onFolderDelete,
 }: {
   folder: Folder;
   level?: number;
@@ -47,6 +30,7 @@ const FolderTreeItem = ({
   onFolderSelect: (folder: Folder) => void;
   onFolderToggle: (folderId: string) => void;
   onFolderRename: (folderId: string, newName: string) => void;
+  onFolderDelete: (folderId: string) => void;
 }) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(folder.name);
@@ -60,6 +44,22 @@ const FolderTreeItem = ({
   const handleToggleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       onFolderToggle(folder.id);
+    }
+  };
+
+  const isFolderEmpty = (folder: Folder): boolean => {
+    return folder.children.every((child) => {
+      if ('children' in child) {
+        return isFolderEmpty(child);
+      }
+      return false;  // If it's an asset, folder is not empty
+    });
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isFolderEmpty(folder)) {
+      onFolderDelete(folder.id);
     }
   };
 
@@ -88,15 +88,44 @@ const FolderTreeItem = ({
         </span>
 
         {isRenaming ? (
-          <TextInput
-            value={newName}
-            onChange={(value) => setNewName(value)}
-            onBlur={() => {
-              onFolderRename(folder.id, newName);
-              setIsRenaming(false);
-            }}
-            data-test-id={`rename-folder-${folder.id}`}
-          />
+          <div className="rename-container">
+            <div className="rename-input-wrapper">
+              <TextInput
+                value={newName}
+                onChange={(value) => setNewName(value)}
+                onBlur={() => {
+                  onFolderRename(folder.id, newName);
+                  setIsRenaming(false);
+                }}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter') {
+                    onFolderRename(folder.id, newName);
+                    setIsRenaming(false);
+                  }
+                  if (e.key === 'Escape') {
+                    setNewName(folder.name);
+                    setIsRenaming(false);
+                  }
+                }}
+                data-test-id={`rename-folder-${folder.id}`}
+              />
+            </div>
+            <button
+              className="instagram-button"
+              style={{ 
+                width: 'auto', 
+                marginLeft: '8px', 
+                padding: '4px 8px',
+                minWidth: '32px' 
+              }}
+              onClick={() => {
+                onFolderRename(folder.id, newName);
+                setIsRenaming(false);
+              }}
+            >
+              ✓
+            </button>
+          </div>
         ) : (
           <div
             style={{display: 'flex', alignItems: 'center', flex: 1}}
@@ -109,6 +138,17 @@ const FolderTreeItem = ({
             <span className="folder-icon">📁</span>
             {folder.name}
           </div>
+        )}
+
+        {!isRenaming && folder.id !== 'root' && (
+          <button
+            onClick={handleDelete}
+            className="delete-folder-button"
+            disabled={folder.children.length > 0}
+            title={folder.children.length > 0 ? "Cannot delete non-empty folder" : "Delete folder"}
+          >
+            🗑️
+          </button>
         )}
       </div>
 
@@ -124,6 +164,7 @@ const FolderTreeItem = ({
                 onFolderSelect={onFolderSelect}
                 onFolderToggle={onFolderToggle}
                 onFolderRename={onFolderRename}
+                onFolderDelete={onFolderDelete}
               />
             );
           }
@@ -140,12 +181,22 @@ const AssetGridItem = ({
   item: Asset;
   onSelect: (asset: Asset) => void;
 }) => {
+  const [url, setUrl] = useState<string>('')
+
+  useEffect(() => {
+    // Retrieve the actual URL from sessionStorage
+    const storedUrl = sessionStorage.getItem(item.url)
+    if (storedUrl) {
+      setUrl(storedUrl)
+    }
+  }, [item.url])
+
   return (
     <div className="asset-item">
-      <img src={item.url} alt={item.name} />
+      {url && <img src={url} alt={item.name} />}
       <div className="asset-item-overlay">
         <div className="asset-item-name">{item.name}</div>
-        <button className="instagram-button" onClick={() => onSelect(item)}>
+        <button className="instagram-button" onClick={() => onSelect({...item, url})}>
           Select
         </button>
       </div>
@@ -158,37 +209,19 @@ export default function AssetManager({
   onClose,
   onSelect,
 }: AssetManagerProps): JSX.Element {
-  const [tree, setTree] = useState<Folder>(initialTree);
-  const [currentFolder, setCurrentFolder] = useState<Folder>(initialTree);
+  const { 
+    tree, 
+    currentFolder, 
+    setCurrentFolder, 
+    addFolder: addFolderToStore, 
+    addAsset,
+    deleteFolder,
+    toggleFolder, 
+    renameFolder 
+  } = useAssetStore();
   const [newFolderName, setNewFolderName] = useState('');
 
-  // Load tree from localStorage on component mount
-  useEffect(() => {
-    try {
-      const storedTree = localStorage.getItem('assetManagerTree');
-      if (storedTree) {
-        const parsedTree = JSON.parse(storedTree);
-        setTree(parsedTree);
-        setCurrentFolder(parsedTree);
-      } else {
-        localStorage.setItem('assetManagerTree', JSON.stringify(initialTree));
-      }
-    } catch (error) {
-      console.error('Error loading asset manager tree:', error);
-      localStorage.setItem('assetManagerTree', JSON.stringify(initialTree));
-    }
-  }, []);
-
-  // Save tree to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('assetManagerTree', JSON.stringify(tree));
-    } catch (error) {
-      console.error('Error saving asset manager tree:', error);
-    }
-  }, [tree]);
-
-  const addFolder = () => {
+  const handleAddFolder = () => {
     if (newFolderName.trim() === '') return;
 
     const newFolder: Folder = {
@@ -198,26 +231,7 @@ export default function AssetManager({
       isExpanded: false,
     };
 
-    const addFolderRecursively = (parentFolder: Folder): Folder => {
-      if (parentFolder.id === currentFolder.id) {
-        return {
-          ...parentFolder,
-          children: [...parentFolder.children, newFolder],
-        };
-      }
-      return {
-        ...parentFolder,
-        children: parentFolder.children.map((child) =>
-          'children' in child ? addFolderRecursively(child) : child,
-        ),
-      };
-    };
-
-    setTree(addFolderRecursively(tree));
-    setCurrentFolder((prev) => ({
-      ...prev,
-      children: [...prev.children, newFolder],
-    }));
+    addFolderToStore(currentFolder.id, newFolder);
     setNewFolderName('');
   };
 
@@ -225,73 +239,33 @@ export default function AssetManager({
     if (!files) return;
 
     const processFile = async (file: File): Promise<Asset> => {
+      const id = `${Date.now()}-${file.name}`
+      const reader = new FileReader()
+      
       return new Promise((resolve) => {
-        const reader = new FileReader();
         reader.onloadend = () => {
+          const url = reader.result as string
+          sessionStorage.setItem(`asset-${id}`, url)
           resolve({
-            id: `${Date.now()}-${file.name}`,
+            id,
             name: file.name,
-            url: reader.result as string,
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-    };
+            url: `asset-${id}`
+          })
+        }
+        reader.readAsDataURL(file)
+      })
+    }
 
-    const newAssets = await Promise.all(Array.from(files).map(processFile));
+    const newAssets = await Promise.all(Array.from(files).map(processFile))
+    newAssets.forEach(asset => {
+      addAsset(currentFolder.id, asset)
+    })
+  }
 
-    const updatedFolder = {
-      ...currentFolder,
-      children: [...currentFolder.children, ...newAssets],
-    };
-
-    const updateTreeRecursively = (folder: Folder): Folder => {
-      if (folder.id === currentFolder.id) {
-        return updatedFolder;
-      }
-      return {
-        ...folder,
-        children: folder.children.map((child) =>
-          'children' in child ? updateTreeRecursively(child) : child,
-        ),
-      };
-    };
-
-    const newTree = updateTreeRecursively(tree);
-    setTree(newTree);
-    setCurrentFolder(updatedFolder);
-  };
-
-  const toggleFolder = (folderId: string) => {
-    const toggleFolderRecursively = (folder: Folder): Folder => {
-      if (folder.id === folderId) {
-        return {...folder, isExpanded: !folder.isExpanded};
-      }
-      return {
-        ...folder,
-        children: folder.children.map((child) =>
-          'children' in child ? toggleFolderRecursively(child) : child,
-        ),
-      };
-    };
-    setTree(toggleFolderRecursively(tree));
-  };
-
-  const renameFolder = (folderId: string, newName: string) => {
-    if (newName.trim() === '') return;
-
-    const renameFolderRecursively = (folder: Folder): Folder => {
-      if (folder.id === folderId) {
-        return {...folder, name: newName.trim()};
-      }
-      return {
-        ...folder,
-        children: folder.children.map((child) =>
-          'children' in child ? renameFolderRecursively(child) : child,
-        ),
-      };
-    };
-    setTree(renameFolderRecursively(tree));
+  const handleClearStorage = () => {
+    sessionStorage.clear();
+    // Force a re-render of all asset items
+    setCurrentFolder({...currentFolder});
   };
 
   return (
@@ -306,7 +280,7 @@ export default function AssetManager({
               onChange={(value) => setNewFolderName(value)}
               placeholder="Create new folder..."
             />
-            <Button onClick={addFolder} className="instagram-button">
+            <Button onClick={handleAddFolder} className="instagram-button">
               Create Folder
             </Button>
           </div>
@@ -317,6 +291,7 @@ export default function AssetManager({
             onFolderSelect={setCurrentFolder}
             onFolderToggle={toggleFolder}
             onFolderRename={renameFolder}
+            onFolderDelete={deleteFolder}
           />
         </div>
 
@@ -336,6 +311,20 @@ export default function AssetManager({
               multiple
               data-test-id="image-modal-file-upload"
             />
+            <Button 
+              onClick={handleClearStorage} 
+              className="instagram-button" 
+              style={{marginTop: '8px'}}
+            >
+              Clear All Assets
+            </Button>
+            <Button 
+              onClick={useAssetStore.getState().cleanupOrphanedAssets} 
+              className="instagram-button" 
+              style={{marginTop: '8px'}}
+            >
+              Clean Up Orphaned Assets
+            </Button>
           </div>
 
           <div className="asset-grid">
