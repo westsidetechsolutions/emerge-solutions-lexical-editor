@@ -34,15 +34,23 @@ interface AssetState {
   cleanupOrphanedAssets: () => void
 }
 
+// Define StorageValue type
+type StorageValue<T> = {
+  state: T;
+};
+
 // Create a custom storage that handles large assets
 const createCustomStorage = () => {
   const storage = createJSONStorage(() => localStorage)
+  if (!storage) {
+    throw new Error("Storage is not initialized");
+  }
   return {
     ...storage,
     setItem: (key: string, value: string) => {
       try {
-        return storage.setItem(key, value)
-      } catch (e) {
+        return storage.setItem(key, value as any)
+      } catch (e: any) {
         // If quota exceeded, try removing assets from the stored value
         if (e.name === 'QuotaExceededError') {
           const parsed = JSON.parse(value)
@@ -51,7 +59,7 @@ const createCustomStorage = () => {
             ...parsed.state,
             tree: cleanTree
           }
-          return storage.setItem(key, JSON.stringify({ state: cleanState }))
+          return storage.setItem(key, JSON.stringify({ state: cleanState }) as any)
         }
         throw e
       }
