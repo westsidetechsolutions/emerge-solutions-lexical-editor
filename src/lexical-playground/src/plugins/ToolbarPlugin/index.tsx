@@ -1359,6 +1359,7 @@ export default function ToolbarPlugin({
             setImageInsertionType(null);
           }}
           onSelect={handleAssetSelect}
+          mode="image"
         />
       )}
     </div>
