@@ -309,21 +309,21 @@ export default function AssetManager({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="w-5xl">
-      <div className="flex h-[600px]">
+    <Modal isOpen={isOpen} onClose={onClose} className="w-[720px]">
+      <div className="flex h-[600px] bg-base-100">
         {/* Folder Tree */}
-        <div className="w-1/3 border-r border-gray-200 p-4">
+        <div className="w-1/3 border-r border-base-300 p-4">
           <div className="mb-4">
             <TextInput
               label="New Folder"
               value={newFolderName}
               onChange={(value) => setNewFolderName(value)}
               placeholder="Create new folder..."
-              className="mb-2"
+              className="input input-bordered w-full mb-2"
             />
             <button 
               onClick={handleAddFolder} 
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition-colors duration-200"
+              className="btn btn-primary w-full"
             >
               Create Folder
             </button>
@@ -341,9 +341,9 @@ export default function AssetManager({
 
         {/* Asset Content */}
         <div className="w-2/3 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-gray-200 flex-shrink-0">
+          <div className="p-4 border-b border-base-300 flex-shrink-0">
             <FileInput
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition-colors duration-200"
+              className="btn btn-primary w-full"
               label={
                 <>
                   <i className="icon upload mr-2" />
@@ -357,13 +357,13 @@ export default function AssetManager({
             <div className="flex gap-2 mt-2">
               <button 
                 onClick={handleClearStorage}
-                className="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                className="btn btn-ghost flex-1"
               >
                 Clear All Assets
               </button>
               <button 
                 onClick={useAssetStore.getState().cleanupOrphanedAssets}
-                className="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                className="btn btn-ghost flex-1"
               >
                 Clean Up Orphaned Assets
               </button>
@@ -371,14 +371,14 @@ export default function AssetManager({
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto p-4">
-            <div className="w-[720px]">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="w-[600px]">
+              <div className="grid grid-cols-3 gap-4">
                 {currentFolder.children.map((item) => {
                   if ('children' in item) {
                     return (
                       <div
                         key={item.id}
-                        className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200"
+                        className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 h-40"
                         onClick={() => setCurrentFolder(item)}
                       >
                         <span className="text-2xl">📁</span>
