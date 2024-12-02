@@ -328,6 +328,7 @@ function getBaseOptions(editor: LexicalEditor, showModal: ShowModal) {
             isOpen={true}
             onClose={() => {}}
             onSelect={handleAssetSelect}
+            mode="image"
           />
         );
       },
