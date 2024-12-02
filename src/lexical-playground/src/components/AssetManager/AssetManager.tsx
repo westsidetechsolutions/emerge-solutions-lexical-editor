@@ -110,7 +110,7 @@ const FolderTreeItem = ({
             </div>
           )}
 
-          {!isRenaming && folder.children.length === 0 && (
+          {!isRenaming && folder.id !== 'root' && folder.children.length === 0 && (
             <button
               onClick={handleDeleteClick}
               className="ml-2 p-1 text-red-500 hover:text-red-700 transition-colors duration-200"
