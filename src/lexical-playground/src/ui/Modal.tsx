@@ -69,14 +69,29 @@ function PortalImpl({
   return (
     <div className="Modal__overlay" role="dialog">
       <div className="Modal__modal" tabIndex={-1} ref={modalRef}>
-        <h2 className="Modal__title">{title}</h2>
-        <button
-          className="Modal__closeButton"
-          aria-label="Close modal"
-          type="button"
-          onClick={onClose}>
-          X
-        </button>
+        <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-4 flex items-center justify-between rounded-t-lg">
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
+          <button
+            className="text-white hover:text-gray-200 transition-colors duration-200"
+            aria-label="Close modal"
+            type="button"
+            onClick={onClose}
+          >
+            <svg 
+              className="w-6 h-6" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M6 18L18 6M6 6l12 12" 
+              />
+            </svg>
+          </button>
+        </div>
         <div className="Modal__content">{children}</div>
       </div>
     </div>

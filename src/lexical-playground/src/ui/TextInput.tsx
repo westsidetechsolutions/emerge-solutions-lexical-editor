@@ -30,7 +30,7 @@ export default function TextInput({
 }: Props): JSX.Element {
   return (
     <div className="Input__wrapper">
-      <label className="Input__label">{label}</label>
+      {label && <label className="Input__label">{label}</label>}
       <input
         type={type}
         className="Input__input"

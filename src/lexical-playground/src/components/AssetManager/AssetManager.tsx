@@ -46,18 +46,9 @@ const FolderTreeItem = ({
     onFolderToggle(folder.id);
   };
 
-  const isFolderEmpty = (folder: Folder): boolean => {
-    return folder.children.every((child) => {
-      if ('children' in child) {
-        return isFolderEmpty(child);
-      }
-      return false;  // If it's an asset, folder is not empty
-    });
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isFolderEmpty(folder)) {
+    if (folder.children.length === 0) {
       onFolderDelete(folder.id);
     }
   };
@@ -119,12 +110,11 @@ const FolderTreeItem = ({
             </div>
           )}
 
-          {!isRenaming && folder.id !== 'root' && (
+          {!isRenaming && folder.children.length === 0 && (
             <button
-              onClick={handleDelete}
-              className="opacity-0 group-hover:opacity-100 p-2 text-gray-500 hover:text-red-500 transition-opacity duration-200"
-              disabled={folder.children.length > 0}
-              title={folder.children.length > 0 ? "Cannot delete non-empty folder" : "Delete folder"}
+              onClick={handleDeleteClick}
+              className="ml-2 p-1 text-red-500 hover:text-red-700 transition-colors duration-200"
+              title="Delete folder"
             >
               🗑️
             </button>
@@ -309,64 +299,98 @@ export default function AssetManager({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="w-[720px]">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="Asset Manager"
+      closeOnClickOutside={false}
+    >
       <div className="flex h-[600px] bg-base-100">
         {/* Folder Tree */}
-        <div className="w-1/3 border-r border-base-300 p-4">
-          <div className="mb-4">
-            <TextInput
-              label="New Folder"
-              value={newFolderName}
-              onChange={(value) => setNewFolderName(value)}
-              placeholder="Create new folder..."
-              className="input input-bordered w-full mb-2"
-            />
-            <button 
-              onClick={handleAddFolder} 
-              className="btn btn-primary w-full"
-            >
-              Create Folder
-            </button>
+        <div className="w-1/3 border-r border-base-200 bg-gray-50/50">
+          <div className="p-6">
+            <div className="space-y-4">
+              {/* Folder Creation Section */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <h3 className="text-base font-semibold text-gray-700 mb-3">
+                  Create New Folder
+                </h3>
+                <div className="space-y-3">
+                  <TextInput
+                    value={newFolderName}
+                    onChange={(value) => setNewFolderName(value)}
+                    placeholder="Enter folder name..."
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all duration-200 text-left"
+                    style={{ textAlign: 'left' }}
+                  />
+                  <button 
+                    onClick={handleAddFolder}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <span className="text-lg">+</span>
+                    <span>Create Folder</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Asset Management Actions */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleClearStorage}
+                  className="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
+                >
+                  Clear Assets
+                </button>
+                <button 
+                  onClick={useAssetStore.getState().cleanupOrphanedAssets}
+                  className="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
+                >
+                  Clean Up
+                </button>
+              </div>
+            </div>
           </div>
 
-          <FolderTreeItem
-            folder={tree}
-            selectedFolderId={currentFolder.id}
-            onFolderSelect={setCurrentFolder}
-            onFolderToggle={toggleFolder}
-            onFolderRename={renameFolder}
-            onFolderDelete={deleteFolder}
-          />
+          {/* Folder Tree */}
+          <div className="mt-2 px-6 pb-6">
+            <FolderTreeItem
+              folder={tree}
+              selectedFolderId={currentFolder.id}
+              onFolderSelect={setCurrentFolder}
+              onFolderToggle={toggleFolder}
+              onFolderRename={renameFolder}
+              onFolderDelete={deleteFolder}
+            />
+          </div>
         </div>
 
         {/* Asset Content */}
-        <div className="w-2/3 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-base-300 flex-shrink-0">
-            <FileInput
-              className="btn btn-primary w-full"
-              label={
-                <>
-                  <i className="icon upload mr-2" />
+        <div className="w-2/3 flex flex-col h-[600px] bg-white">
+          <div className="p-6 border-b border-gray-100">
+            <div className="space-y-4">
+              {/* Upload Section */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 shadow-sm border border-purple-100/50">
+                <h3 className="text-base font-semibold text-gray-700 mb-3">
                   Upload Files
-                </>
-              }
-              onChange={handleFileUpload}
-              accept={ACCEPTED_FILE_TYPES[mode]}
-              multiple
-            />
-            <div className="flex gap-2 mt-2">
-              <button 
-                onClick={handleClearStorage}
-                className="btn btn-ghost flex-1"
-              >
-                Clear All Assets
-              </button>
-              <button 
-                onClick={useAssetStore.getState().cleanupOrphanedAssets}
-                className="btn btn-ghost flex-1"
-              >
-                Clean Up Orphaned Assets
-              </button>
+                </h3>
+                <div className="space-y-3">
+                  <FileInput
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                    label={
+                      <div className="flex items-center justify-center space-x-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>Upload Files</span>
+                      </div>
+                    }
+                    onChange={handleFileUpload}
+                    accept={ACCEPTED_FILE_TYPES[mode]}
+                    multiple
+                  />
+                  
+                </div>
+              </div>
             </div>
           </div>
 
