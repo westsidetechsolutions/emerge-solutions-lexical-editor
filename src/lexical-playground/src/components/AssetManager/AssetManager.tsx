@@ -13,6 +13,7 @@ interface AssetManagerProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (asset: Asset) => void;
+  mode: 'link' | 'image';
 }
 
 const FolderTreeItem = ({
@@ -177,28 +178,79 @@ const FolderTreeItem = ({
 const AssetGridItem = ({
   item,
   onSelect,
+  mode
 }: {
   item: Asset;
   onSelect: (asset: Asset) => void;
+  mode: 'link' | 'image';
 }) => {
   const [url, setUrl] = useState<string>('')
 
   useEffect(() => {
-    // Retrieve the actual URL from sessionStorage
     const storedUrl = sessionStorage.getItem(item.url)
     if (storedUrl) {
       setUrl(storedUrl)
     }
   }, [item.url])
 
+  const isImage = item.type?.startsWith('image/')
+  const isVideo = item.type?.startsWith('video/')
+  const isDocument = !isImage && !isVideo
+
+  const shouldShow = mode === 'link' ? true : (isImage || isVideo)
+
+  if (!shouldShow) return null;
+
   return (
     <div className="asset-item">
-      {url && <img src={url} alt={item.name} />}
+      {isImage && url && <img src={url} alt={item.name} />}
+      {isVideo && url && <video src={url} />}
+      {isDocument && <FilePreview type={item.type || ''} name={item.name} />}
       <div className="asset-item-overlay">
         <div className="asset-item-name">{item.name}</div>
-        <button className="instagram-button" onClick={() => onSelect({...item, url})}>
+        <button 
+          className="instagram-button" 
+          onClick={() => onSelect({...item, url})}
+        >
           Select
         </button>
+      </div>
+    </div>
+  );
+};
+
+const ACCEPTED_FILE_TYPES = {
+  link: '.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt',
+  image: 'image/*,video/*'
+};
+
+const FilePreview = ({ type, name }: { type: string; name: string }) => {
+  const getFileIcon = () => {
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word') || type.includes('doc')) return '📝';
+    if (type.includes('sheet') || type.includes('excel') || type.includes('csv')) return '📊';
+    if (type.includes('presentation') || type.includes('powerpoint')) return '📑';
+    if (type.includes('text')) return '📃';
+    return '📁';
+  };
+
+  const getFileColor = () => {
+    if (type.includes('pdf')) return '#ff4433';
+    if (type.includes('word') || type.includes('doc')) return '#2b579a';
+    if (type.includes('sheet') || type.includes('excel')) return '#217346';
+    if (type.includes('presentation') || type.includes('powerpoint')) return '#b7472a';
+    if (type.includes('text')) return '#4a4a4a';
+    return '#8f8f8f';
+  };
+
+  return (
+    <div className="file-preview">
+      <div className="file-icon" style={{ color: getFileColor() }}>
+        {getFileIcon()}
+      </div>
+      <div className="file-info">
+        <div className="file-name">{name}</div>
+        <div className="file-type">{type.split('/')[1]?.toUpperCase() || 'DOCUMENT'}</div>
       </div>
     </div>
   );
@@ -208,6 +260,7 @@ export default function AssetManager({
   isOpen,
   onClose,
   onSelect,
+  mode,
 }: AssetManagerProps): JSX.Element {
   const { 
     tree, 
@@ -249,7 +302,8 @@ export default function AssetManager({
           resolve({
             id,
             name: file.name,
-            url: `asset-${id}`
+            url: `asset-${id}`,
+            type: file.type
           })
         }
         reader.readAsDataURL(file)
@@ -307,7 +361,7 @@ export default function AssetManager({
                 </>
               }
               onChange={handleFileUpload}
-              accept="image/*"
+              accept={ACCEPTED_FILE_TYPES[mode]}
               multiple
               data-test-id="image-modal-file-upload"
             />
@@ -335,6 +389,7 @@ export default function AssetManager({
                   key={item.id}
                   item={item as Asset}
                   onSelect={onSelect}
+                  mode={mode}
                 />
               ))}
           </div>

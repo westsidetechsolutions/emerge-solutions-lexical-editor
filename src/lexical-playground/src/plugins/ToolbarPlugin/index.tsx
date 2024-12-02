@@ -866,6 +866,7 @@ export default function ToolbarPlugin({
                         sanitizeUrl(asset.url),
                       );
                     }}
+                    mode="link"
                   />
                 ));
               }}>

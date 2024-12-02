@@ -51,6 +51,7 @@ export function InsertImageDialog({
       isOpen={true}
       onClose={onClose}
       onSelect={handleAssetSelect}
+      mode="image"
     />
   );
 }

@@ -409,3 +409,67 @@
     padding: 8px 12px;
   }
 }
+
+.document-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f5f5f5;
+  padding: 1rem;
+}
+
+.document-preview .icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.document-preview span {
+  text-align: center;
+  word-break: break-word;
+  font-size: 0.8rem;
+}
+
+.file-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 1rem;
+  background: linear-gradient(145deg, #f6f6f6, #ffffff);
+  border-radius: 8px;
+}
+
+.file-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.asset-item:hover .file-icon {
+  transform: scale(1.1);
+}
+
+.file-info {
+  text-align: center;
+}
+
+.file-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #262626;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.file-type {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+}
