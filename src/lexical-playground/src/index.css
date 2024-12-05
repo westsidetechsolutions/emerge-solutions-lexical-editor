@@ -1436,14 +1436,15 @@ button.action-button:disabled {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   margin-bottom: 1px;
   background: #fff;
   padding: 4px;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   vertical-align: middle;
-  overflow: auto;
-  height: 36px;
+  height: auto;
+  min-height: 36px;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -1460,6 +1461,7 @@ button.toolbar-item {
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
+  margin: 2px;
 }
 
 button.toolbar-item:disabled {

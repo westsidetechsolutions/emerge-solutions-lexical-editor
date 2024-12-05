@@ -235,36 +235,6 @@ function getBaseOptions(editor: LexicalEditor, showModal: ShowModal) {
       onSelect: () =>
         editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined),
     }),
-    new ComponentPickerOption('Page Break', {
-      icon: <i className="icon page-break" />,
-      keywords: ['page break', 'divider'],
-      onSelect: () => editor.dispatchCommand(INSERT_PAGE_BREAK, undefined),
-    }),
-    new ComponentPickerOption('Poll', {
-      icon: <i className="icon poll" />,
-      keywords: ['poll', 'vote'],
-      onSelect: () =>
-        showModal('Insert Poll', (onClose) => (
-          <InsertPollDialog activeEditor={editor} onClose={onClose} />
-        )),
-    }),
-    ...EmbedConfigs.map(
-      (embedConfig) =>
-        new ComponentPickerOption(`Embed ${embedConfig.contentName}`, {
-          icon: embedConfig.icon,
-          keywords: [...embedConfig.keywords, 'embed'],
-          onSelect: () =>
-            editor.dispatchCommand(INSERT_EMBED_COMMAND, embedConfig.type),
-        }),
-    ),
-    new ComponentPickerOption('Equation', {
-      icon: <i className="icon equation" />,
-      keywords: ['equation', 'latex', 'math'],
-      onSelect: () =>
-        showModal('Insert Equation', (onClose) => (
-          <InsertEquationDialog activeEditor={editor} onClose={onClose} />
-        )),
-    }),
     new ComponentPickerOption('GIF', {
       icon: <i className="icon gif" />,
       keywords: ['gif', 'animate', 'image', 'file'],

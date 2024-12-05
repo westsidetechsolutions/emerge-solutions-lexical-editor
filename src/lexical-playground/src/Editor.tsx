@@ -183,13 +183,9 @@ export default function Editor(): JSX.Element {
             <ImagesPlugin />
             <InlineImagePlugin />
             <LinkPlugin />
-            <PollPlugin />
-            <TwitterPlugin />
             <YouTubePlugin />
-            <FigmaPlugin />
             <ClickableLinkPlugin disabled={isEditable} />
             <HorizontalRulePlugin />
-            <EquationsPlugin />
             <TabFocusPlugin />
             <TabIndentationPlugin />
             <CollapsiblePlugin />

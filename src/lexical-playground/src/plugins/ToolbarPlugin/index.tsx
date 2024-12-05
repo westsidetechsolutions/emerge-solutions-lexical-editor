@@ -338,12 +338,6 @@ function BlockFormatDropDown({
         <i className="icon quote" />
         <span className="text">Quote</span>
       </DropDownItem>
-      <DropDownItem
-        className={'item ' + dropDownActiveClass(blockType === 'code')}
-        onClick={formatCode}>
-        <i className="icon code" />
-        <span className="text">Code Block</span>
-      </DropDownItem>
     </DropDown>
   );
 }
@@ -662,9 +656,6 @@ export default function ToolbarPlugin({
       setIsBold(selection.hasFormat('bold'));
       setIsItalic(selection.hasFormat('italic'));
       setIsUnderline(selection.hasFormat('underline'));
-      setIsStrikethrough(selection.hasFormat('strikethrough'));
-      setIsSubscript(selection.hasFormat('subscript'));
-      setIsSuperscript(selection.hasFormat('superscript'));
       setIsCode(selection.hasFormat('code'));
 
       setFontSize(
@@ -1083,57 +1074,6 @@ export default function ToolbarPlugin({
             onChange={onBgColorSelect}
             title="bg color"
           />
-          <DropDown
-            disabled={!isEditable}
-            buttonClassName="toolbar-item spaced"
-            buttonLabel=""
-            buttonAriaLabel="Formatting options for additional text styles"
-            buttonIconClassName="icon dropdown-more">
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(
-                  FORMAT_TEXT_COMMAND,
-                  'strikethrough',
-                );
-              }}
-              className={'item ' + dropDownActiveClass(isStrikethrough)}
-              title="Strikethrough"
-              aria-label="Format text with a strikethrough">
-              <i className="icon strikethrough" />
-              <span className="text">Strikethrough</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript');
-              }}
-              className={'item ' + dropDownActiveClass(isSubscript)}
-              title="Subscript"
-              aria-label="Format text with a subscript">
-              <i className="icon subscript" />
-              <span className="text">Subscript</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(
-                  FORMAT_TEXT_COMMAND,
-                  'superscript',
-                );
-              }}
-              className={'item ' + dropDownActiveClass(isSuperscript)}
-              title="Superscript"
-              aria-label="Format text with a superscript">
-              <i className="icon superscript" />
-              <span className="text">Superscript</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={clearFormatting}
-              className="item"
-              title="Clear text formatting"
-              aria-label="Clear all text formatting">
-              <i className="icon clear" />
-              <span className="text">Clear Formatting</span>
-            </DropDownItem>
-          </DropDown>
           <Divider />
           <HTMLViewButton />
           <Divider />
@@ -1217,14 +1157,6 @@ export default function ToolbarPlugin({
                   <span className="text">Horizontal Rule</span>
                 </DropDownItem>
                 <DropDownItem
-                  onClick={() => {
-                    activeEditor.dispatchCommand(INSERT_PAGE_BREAK, undefined);
-                  }}
-                  className="item">
-                  <i className="icon page-break" />
-                  <span className="text">Page Break</span>
-                </DropDownItem>
-                <DropDownItem
                   onClick={handleInsertRegularImage}
                   className="item">
                   <i className="icon image" />
@@ -1262,19 +1194,6 @@ export default function ToolbarPlugin({
                 </DropDownItem>
                 <DropDownItem
                   onClick={() => {
-                    showModal('Insert Poll', (onClose) => (
-                      <InsertPollDialog
-                        activeEditor={activeEditor}
-                        onClose={onClose}
-                      />
-                    ));
-                  }}
-                  className="item">
-                  <i className="icon poll" />
-                  <span className="text">Poll</span>
-                </DropDownItem>
-                <DropDownItem
-                  onClick={() => {
                     showModal('Insert Columns Layout', (onClose) => (
                       <InsertLayoutDialog
                         activeEditor={activeEditor}
@@ -1285,20 +1204,6 @@ export default function ToolbarPlugin({
                   className="item">
                   <i className="icon columns" />
                   <span className="text">Columns Layout</span>
-                </DropDownItem>
-
-                <DropDownItem
-                  onClick={() => {
-                    showModal('Insert Equation', (onClose) => (
-                      <InsertEquationDialog
-                        activeEditor={activeEditor}
-                        onClose={onClose}
-                      />
-                    ));
-                  }}
-                  className="item">
-                  <i className="icon equation" />
-                  <span className="text">Equation</span>
                 </DropDownItem>
                 <DropDownItem
                   onClick={() => {
