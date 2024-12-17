@@ -111,10 +111,17 @@ export function InsertInlineImageDialog({
       </div>
 
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleConfirm} data-test-id="image-modal-confirm-btn">
-          Confirm
-        </Button>
+        <button
+          className="btn btn-sm btn-ghost"
+          onClick={onClose}>
+          Cancel
+        </button>
+        <button 
+          className="btn btn-sm btn-primary"
+          onClick={handleConfirm}
+          data-test-id="image-modal-confirm-btn">
+          Save
+        </button>
       </DialogActions>
     </>
   );

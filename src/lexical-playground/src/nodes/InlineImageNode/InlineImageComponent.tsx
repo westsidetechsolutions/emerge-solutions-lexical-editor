@@ -30,6 +30,7 @@ import {
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
   SELECTION_CHANGE_COMMAND,
+  $isRangeSelection,
 } from 'lexical';
 import * as React from 'react';
 import {Suspense, useCallback, useEffect, useRef, useState} from 'react';
@@ -164,11 +165,17 @@ export function UpdateInlineImageDialog({
       </div>
 
       <DialogActions>
-        <Button
-          data-test-id="image-modal-file-upload-btn"
-          onClick={() => handleOnConfirm()}>
-          Confirm
-        </Button>
+        <button
+          className="btn btn-sm btn-ghost"
+          onClick={onClose}>
+          Cancel
+        </button>
+        <button 
+          className="btn btn-sm btn-primary"
+          onClick={handleOnConfirm}
+          data-test-id="image-edit-modal-confirm-btn">
+          Save
+        </button>
       </DialogActions>
     </>
   );
@@ -228,20 +235,26 @@ export default function InlineImageComponent({
 
   const $onEnter = useCallback(
     (event: KeyboardEvent) => {
-      const latestSelection = $getSelection();
+      const selection = $getSelection();
       const buttonElem = buttonRef.current;
       if (
         isSelected &&
-        $isNodeSelection(latestSelection) &&
-        latestSelection.getNodes().length === 1
+        $isNodeSelection(selection) &&
+        selection.getNodes().length === 1
       ) {
         if (showCaption) {
           // Move focus into nested editor
-          $getSelection()?.collapseToEnd();
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            selection.collapseToEnd();
+          }
           event.preventDefault();
           caption.focus();
           return true;
-        } else if (buttonElem !== null && buttonElem !== document.activeElement) {
+        } else if (
+          buttonElem !== null &&
+          buttonElem !== document.activeElement
+        ) {
           event.preventDefault();
           buttonElem.focus();
           return true;
