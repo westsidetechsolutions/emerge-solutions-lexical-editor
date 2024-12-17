@@ -94,6 +94,7 @@ import {INSERT_PAGE_BREAK} from '../PageBreakPlugin';
 import {InsertPollDialog} from '../PollPlugin';
 import {InsertTableDialog} from '../TablePlugin';
 import FontSize from './fontSize';
+import '../../fonts/fonts.css';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -136,6 +137,8 @@ const FONT_FAMILY_OPTIONS: [string, string][] = [
   ['Times New Roman', 'Times New Roman'],
   ['Trebuchet MS', 'Trebuchet MS'],
   ['Verdana', 'Verdana'],
+  ['Liberation Sans', 'Liberation Sans'],
+  ['Proximanova Regular', 'Proximanova Regular'],
 ];
 
 const FONT_SIZE_OPTIONS: [string, string][] = [
@@ -393,7 +396,11 @@ function FontDropDown({
             }`}
             onClick={() => handleClick(option)}
             key={option}>
-            <span className="text">{text}</span>
+            <span 
+              className="text" 
+              style={style === 'font-family' ? { fontFamily: option } : undefined}>
+              {text}
+            </span>
           </DropDownItem>
         ),
       )}
@@ -824,46 +831,42 @@ export default function ToolbarPlugin({
   const insertLink = useCallback(() => {
     if (!isLink) {
       showModal('Insert Link', (onClose) => (
-        <div>
-          <div style={{marginBottom: '1rem'}}>
-            <button
-              className="instagram-button"
-              onClick={() => {
-                onClose();
-                setIsLinkEditMode(true);
-                activeEditor.dispatchCommand(
-                  TOGGLE_LINK_COMMAND,
-                  sanitizeUrl('https://'),
-                );
-              }}>
-              Enter URL
-            </button>
-          </div>
+        <div className="flex flex-col gap-2">
+          <button
+            className="btn btn-sm btn-primary w-full"
+            onClick={() => {
+              onClose();
+              setIsLinkEditMode(true);
+              activeEditor.dispatchCommand(
+                TOGGLE_LINK_COMMAND,
+                sanitizeUrl('https://'),
+              );
+            }}>
+            Enter URL
+          </button>
 
-          <div style={{marginBottom: '1rem'}}>
-            <button
-              className="instagram-button"
-              onClick={() => {
-                onClose();
-                showModal('Select File', (onFileClose) => (
-                  <AssetManager
-                    isOpen={true}
-                    onClose={onFileClose}
-                    onSelect={(asset) => {
-                      onFileClose();
-                      setIsLinkEditMode(true);
-                      activeEditor.dispatchCommand(
-                        TOGGLE_LINK_COMMAND,
-                        sanitizeUrl(asset.url),
-                      );
-                    }}
-                    mode="link"
-                  />
-                ));
-              }}>
-              Select a File
-            </button>
-          </div>
+          <button
+            className="btn btn-sm btn-primary w-full"
+            onClick={() => {
+              onClose();
+              showModal('Select File', (onFileClose) => (
+                <AssetManager
+                  isOpen={true}
+                  onClose={onFileClose}
+                  onSelect={(asset) => {
+                    onFileClose();
+                    setIsLinkEditMode(true);
+                    activeEditor.dispatchCommand(
+                      TOGGLE_LINK_COMMAND,
+                      sanitizeUrl(asset.url),
+                    );
+                  }}
+                  mode="link"
+                />
+              ));
+            }}>
+            Select a File
+          </button>
         </div>
       ));
     } else {
@@ -1077,65 +1080,12 @@ export default function ToolbarPlugin({
           <Divider />
           <HTMLViewButton />
           <Divider />
-          <DropDown
+          <ElementFormatDropdown
             disabled={!isEditable}
-            buttonClassName="toolbar-item spaced"
-            buttonLabel="Align"
-            buttonIconClassName="icon left-align"
-            buttonAriaLabel="Formatting options for text alignment">
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left');
-              }}
-              className="item">
-              <i className="icon left-align" />
-              <span className="text">Left Align</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center');
-              }}
-              className="item">
-              <i className="icon center-align" />
-              <span className="text">Center Align</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right');
-              }}
-              className="item">
-              <i className="icon right-align" />
-              <span className="text">Right Align</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify');
-              }}
-              className="item">
-              <i className="icon justify-align" />
-              <span className="text">Justify Align</span>
-            </DropDownItem>
-            <Divider />
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(
-                  OUTDENT_CONTENT_COMMAND,
-                  undefined,
-                );
-              }}
-              className="item">
-              <i className={'icon ' + (isRTL ? 'indent' : 'outdent')} />
-              <span className="text">Outdent</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined);
-              }}
-              className="item">
-              <i className={'icon ' + (isRTL ? 'outdent' : 'indent')} />
-              <span className="text">Indent</span>
-            </DropDownItem>
-          </DropDown>
+            value={elementFormat}
+            editor={activeEditor}
+            isRTL={isRTL}
+          />
           {canViewerSeeInsertDropdown && (
             <>
               <Divider />
@@ -1248,13 +1198,6 @@ export default function ToolbarPlugin({
         </>
       )}
       <Divider />
-      <ElementFormatDropdown
-        disabled={!isEditable}
-        value={elementFormat}
-        editor={activeEditor}
-        isRTL={isRTL}
-      />
-
       {modal}
       {isAssetManagerOpen && (
         <AssetManager

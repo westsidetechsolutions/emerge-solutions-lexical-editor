@@ -58,6 +58,7 @@ function FloatingLinkEditor({
   const [lastSelection, setLastSelection] = useState<BaseSelection | null>(
     null,
   );
+  const [openInNewTab, setOpenInNewTab] = useState(true);
 
   const $updateLinkEditor = useCallback(() => {
     const selection = $getSelection();
@@ -217,10 +218,10 @@ function FloatingLinkEditor({
   return (
     <div ref={editorRef} className="link-editor">
       {!isLink ? null : isLinkEditMode ? (
-        <>
+        <div className="flex flex-col gap-1.5 p-2 min-w-[250px] w-full">
           <input
             ref={inputRef}
-            className="link-input"
+            className="input input-bordered input-sm w-full"
             value={editedLinkUrl}
             onChange={(event) => {
               setEditedLinkUrl(event.target.value);
@@ -228,54 +229,65 @@ function FloatingLinkEditor({
             onKeyDown={(event) => {
               monitorInputInteraction(event);
             }}
+            placeholder="Enter URL"
           />
-          <div>
-            <div
-              className="link-cancel"
-              role="button"
-              tabIndex={0}
+          <label className="flex items-center gap-1.5 cursor-pointer py-2">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-xs checkbox-primary"
+              checked={openInNewTab}
+              onChange={(e) => setOpenInNewTab(e.target.checked)}
+            />
+            <span className="text-xs opacity-70">Open in new tab</span>
+          </label>
+          <div className="flex justify-end gap-2 mt-2">
+            <button
+              className="btn btn-sm btn-ghost"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 setIsLinkEditMode(false);
               }}
-            />
-
-            <div
-              className="link-confirm"
-              role="button"
-              tabIndex={0}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-sm btn-primary"
               onMouseDown={(event) => event.preventDefault()}
               onClick={handleLinkSubmission}
-            />
+            >
+              Save
+            </button>
           </div>
-        </>
+        </div>
       ) : (
-        <div className="link-view">
+        <div className="flex items-center gap-2 p-2 min-w-[300px]">
           <a
             href={sanitizeUrl(linkUrl)}
-            target="_blank"
-            rel="noopener noreferrer">
+            target={openInNewTab ? "_blank" : "_self"}
+            rel="noopener noreferrer"
+            className="flex-1 text-sm text-blue-600 hover:underline truncate"
+          >
             {linkUrl}
           </a>
-          <div
-            className="link-edit"
-            role="button"
-            tabIndex={0}
+          <button
+            className="btn btn-sm btn-ghost btn-square"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               setEditedLinkUrl(linkUrl);
               setIsLinkEditMode(true);
             }}
-          />
-          <div
-            className="link-trash"
-            role="button"
-            tabIndex={0}
+          >
+            <i className="icon edit" />
+          </button>
+          <button
+            className="btn btn-sm btn-ghost btn-square text-error"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
             }}
-          />
+          >
+            <i className="icon trash" />
+          </button>
         </div>
       )}
     </div>

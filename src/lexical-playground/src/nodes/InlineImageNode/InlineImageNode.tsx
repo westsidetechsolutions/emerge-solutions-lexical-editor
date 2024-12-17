@@ -22,6 +22,8 @@ import type {
 import {$applyNodeReplacement, createEditor, DecoratorNode} from 'lexical';
 import * as React from 'react';
 import {Suspense} from 'react';
+import ImageResizer from '../../ui/ImageResizer';
+import {useRef, useState} from 'react';
 
 const InlineImageComponent = React.lazy(() => import('./InlineImageComponent'));
 
@@ -291,4 +293,68 @@ export function $isInlineImageNode(
   node: LexicalNode | null | undefined,
 ): node is InlineImageNode {
   return node instanceof InlineImageNode;
+}
+
+export function UpdateInlineImageComponent({
+  src,
+  altText,
+  width,
+  height,
+  nodeKey,
+}: {
+  src: string;
+  altText: string;
+  width: 'inherit' | number;
+  height: 'inherit' | number;
+  nodeKey: NodeKey;
+}): JSX.Element {
+  const imageRef = useRef<HTMLImageElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const [showCaption, setShowCaption] = useState<boolean>(false);
+  const editor = useLexicalComposerContext()[0];
+
+  const onResizeStart = () => {
+    setIsResizing(true);
+  };
+
+  const onResizeEnd = (nextWidth: 'inherit' | number, nextHeight: 'inherit' | number) => {
+    setIsResizing(false);
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isInlineImageNode(node)) {
+        node.setWidthAndHeight(nextWidth, nextHeight);
+      }
+    });
+  };
+
+  return (
+    <>
+      <div className="inline-image-container">
+        <img
+          src={src}
+          alt={altText}
+          ref={imageRef}
+          style={{
+            height: height === 'inherit' ? 'inherit' : `${height}px`,
+            width: width === 'inherit' ? 'inherit' : `${width}px`,
+          }}
+          className="inline-image"
+          draggable="false"
+        />
+        {!isResizing && (
+          <ImageResizer
+            buttonRef={buttonRef}
+            imageRef={imageRef}
+            editor={editor}
+            onResizeStart={onResizeStart}
+            onResizeEnd={onResizeEnd}
+            showCaption={showCaption}
+            setShowCaption={setShowCaption}
+            captionsEnabled={false}
+          />
+        )}
+      </div>
+    </>
+  );
 }

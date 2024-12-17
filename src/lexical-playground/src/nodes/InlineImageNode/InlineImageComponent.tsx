@@ -42,6 +42,7 @@ import {DialogActions} from '../../ui/Dialog';
 import Select from '../../ui/Select';
 import TextInput from '../../ui/TextInput';
 import {$isInlineImageNode, InlineImageNode} from './InlineImageNode';
+import ImageResizer from '../../ui/ImageResizer';
 
 const imageCache = new Set();
 
@@ -183,23 +184,26 @@ export default function InlineImageComponent({
   caption,
   position,
 }: {
-  altText: string;
-  caption: LexicalEditor;
-  height: 'inherit' | number;
-  nodeKey: NodeKey;
-  showCaption: boolean;
   src: string;
+  altText: string;
+  nodeKey: NodeKey;
   width: 'inherit' | number;
+  height: 'inherit' | number;
+  showCaption: boolean;
+  caption: LexicalEditor;
   position: Position;
 }): JSX.Element {
   const [modal, showModal] = useModal();
-  const imageRef = useRef<null | HTMLImageElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [isSelected, setSelected, clearSelection] =
-    useLexicalNodeSelection(nodeKey);
+  const [isSelected, setSelected, clearSelection] = useLexicalNodeSelection(nodeKey);
   const [editor] = useLexicalComposerContext();
   const [selection, setSelection] = useState<BaseSelection | null>(null);
   const activeEditorRef = useRef<LexicalEditor | null>(null);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const setShowCaption = useCallback(() => {
+    // No-op since captions are disabled for inline images
+  }, []);
 
   const $onDelete = useCallback(
     (payload: KeyboardEvent) => {
@@ -233,14 +237,11 @@ export default function InlineImageComponent({
       ) {
         if (showCaption) {
           // Move focus into nested editor
-          $setSelection(null);
+          $getSelection()?.collapseToEnd();
           event.preventDefault();
           caption.focus();
           return true;
-        } else if (
-          buttonElem !== null &&
-          buttonElem !== document.activeElement
-        ) {
+        } else if (buttonElem !== null && buttonElem !== document.activeElement) {
           event.preventDefault();
           buttonElem.focus();
           return true;
@@ -257,7 +258,7 @@ export default function InlineImageComponent({
         activeEditorRef.current === caption ||
         buttonRef.current === event.target
       ) {
-        $setSelection(null);
+        $getSelection()?.collapseToEnd();
         editor.update(() => {
           setSelected(true);
           const parentRootElement = editor.getRootElement();
@@ -275,7 +276,7 @@ export default function InlineImageComponent({
   useEffect(() => {
     let isMounted = true;
     const unregister = mergeRegister(
-      editor.registerUpdateListener(({editorState}) => {
+      editor.registerUpdateListener(({ editorState }) => {
         if (isMounted) {
           setSelection(editorState.read(() => $getSelection()));
         }
@@ -310,8 +311,6 @@ export default function InlineImageComponent({
         DRAGSTART_COMMAND,
         (event) => {
           if (event.target === imageRef.current) {
-            // TODO This is just a temporary workaround for FF to behave like other browsers.
-            // Ideally, this handles drag & drop too (and all browsers).
             event.preventDefault();
             return true;
           }
@@ -353,6 +352,23 @@ export default function InlineImageComponent({
 
   const draggable = isSelected && $isNodeSelection(selection);
   const isFocused = isSelected;
+
+  const onResizeStart = () => {
+    setIsResizing(true);
+    editor.dispatchCommand('EXTERNAL_RESIZE_START', null);
+  };
+
+  const onResizeEnd = (nextWidth: 'inherit' | number, nextHeight: 'inherit' | number) => {
+    setIsResizing(false);
+    editor.dispatchCommand('EXTERNAL_RESIZE_END', null);
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isInlineImageNode(node)) {
+        node.setWidthAndHeight(nextWidth, nextHeight);
+      }
+    });
+  };
+
   return (
     <Suspense fallback={null}>
       <>
@@ -368,22 +384,38 @@ export default function InlineImageComponent({
                   onClose={onClose}
                 />
               ));
-            }}>
+            }}
+            aria-label="Edit Image"
+          >
             Edit
           </button>
-          <LazyImage
-            className={
-              isFocused
-                ? `focused ${$isNodeSelection(selection) ? 'draggable' : ''}`
-                : null
-            }
-            src={src}
-            altText={altText}
-            imageRef={imageRef}
-            width={width}
-            height={height}
-            position={position}
-          />
+          <div className="inline-image-container">
+            <img
+              src={src}
+              alt={altText}
+              ref={imageRef}
+              data-position={position}
+              style={{
+                display: 'block',
+                height: height === 'inherit' ? 'inherit' : `${height}px`,
+                width: width === 'inherit' ? 'inherit' : `${width}px`,
+              }}
+              className={`inline-image ${isFocused ? 'focused' : ''}`}
+              draggable="false"
+            />
+            {!isResizing && (
+              <ImageResizer
+                buttonRef={buttonRef}
+                imageRef={imageRef}
+                editor={editor}
+                onResizeStart={onResizeStart}
+                onResizeEnd={onResizeEnd}
+                showCaption={showCaption}
+                setShowCaption={setShowCaption}
+                captionsEnabled={false}
+              />
+            )}
+          </div>
         </span>
         {showCaption && (
           <span className="image-caption-container">

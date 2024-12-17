@@ -8,13 +8,22 @@
 import {$generateHtmlFromNodes, $generateNodesFromDOM} from '@lexical/html';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {$getRoot} from 'lexical';
-import {useCallback, useEffect,useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
+import Modal from '../../ui/Modal';
+
+type ResizeDirection = 'e' | 'w' | 's' | 'n' | 'se' | 'sw' | 'ne' | 'nw';
+
+const RESIZE_HANDLE_CLASS = "w-3 h-3 absolute bg-primary/20 hover:bg-primary/40 transition-colors";
 
 export function HTMLViewButton(): JSX.Element {
   const [editor] = useLexicalComposerContext();
   const [isHTMLView, setIsHTMLView] = useState(false);
   const [htmlContent, setHtmlContent] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartPos = useRef({ x: 0, y: 0 });
+  const initialSize = useRef({ width: 0, height: 0 });
 
   const toggleHTMLView = useCallback(() => {
     setIsHTMLView((prev) => !prev);
@@ -37,7 +46,7 @@ export function HTMLViewButton(): JSX.Element {
     [],
   );
 
-  const applyHTMLChanges = useCallback(() => {
+  const handleSave = useCallback(() => {
     const parser = new DOMParser();
     const dom = parser.parseFromString(htmlContent, 'text/html');
     editor.update(() => {
@@ -45,7 +54,45 @@ export function HTMLViewButton(): JSX.Element {
       $getRoot().clear();
       $getRoot().append(...nodes);
     });
+    setIsHTMLView(false);
   }, [editor, htmlContent]);
+
+  const handleResizeStart = useCallback((event: React.PointerEvent, direction: ResizeDirection) => {
+    event.preventDefault();
+    if (!modalRef.current) return;
+
+    const { width, height } = modalRef.current.getBoundingClientRect();
+    initialSize.current = { width, height };
+    resizeStartPos.current = { x: event.clientX, y: event.clientY };
+    setIsResizing(true);
+
+    const handleResizeMove = (event: PointerEvent) => {
+      if (!modalRef.current) return;
+
+      const deltaX = event.clientX - resizeStartPos.current.x;
+      const deltaY = event.clientY - resizeStartPos.current.y;
+
+      let newWidth = initialSize.current.width;
+      let newHeight = initialSize.current.height;
+
+      if (direction.includes('e')) newWidth += deltaX;
+      if (direction.includes('w')) newWidth -= deltaX;
+      if (direction.includes('s')) newHeight += deltaY;
+      if (direction.includes('n')) newHeight -= deltaY;
+
+      modalRef.current.style.width = `${Math.max(newWidth, 400)}px`;
+      modalRef.current.style.height = `${Math.max(newHeight, 300)}px`;
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+      document.removeEventListener('pointermove', handleResizeMove);
+      document.removeEventListener('pointerup', handleResizeEnd);
+    };
+
+    document.addEventListener('pointermove', handleResizeMove);
+    document.addEventListener('pointerup', handleResizeEnd);
+  }, []);
 
   return (
     <>
@@ -57,41 +104,66 @@ export function HTMLViewButton(): JSX.Element {
         HTML
       </button>
       {isHTMLView && (
-        <div
-          style={{
-            backgroundColor: 'white',
-            boxShadow: '-2px 0 5px rgba(0,0,0,0.1)',
-            boxSizing: 'border-box',
-            height: 'calc(100% - 60px)',
-            padding: '10px',
-            position: 'fixed',
-            right: '0',
-            top: '60px',
-            width: '400px',
-            zIndex: 100,
-          }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '10px',
-            }}>
-            <h3 style={{margin: 0}}>HTML View</h3>
-            <button onClick={toggleHTMLView}>Close</button>
+        <Modal
+          title="HTML View"
+          isOpen={isHTMLView}
+          onClose={toggleHTMLView}
+          closeOnClickOutside={false}
+        >
+          <div 
+            ref={modalRef}
+            className={`flex flex-col w-[800px] h-[500px] relative ${isResizing ? 'select-none' : ''}`}
+          >
+            <div className="flex-1 relative mt-2 mb-4">
+              <textarea
+                className="absolute inset-0 w-full h-full resize-none font-mono text-sm p-4 bg-base-200 rounded-lg border border-base-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                value={htmlContent}
+                onChange={handleHTMLChange}
+              />
+              {/* Resize handles */}
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} -right-1.5 top-1/2 -translate-y-1/2 cursor-e-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'e')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} -left-1.5 top-1/2 -translate-y-1/2 cursor-w-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'w')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} -top-1.5 left-1/2 -translate-x-1/2 cursor-n-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'n')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} bottom-0 -right-1.5 cursor-se-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'se')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} bottom-0 -left-1.5 cursor-sw-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'sw')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} -top-1.5 -right-1.5 cursor-ne-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'ne')}
+              />
+              <div 
+                className={`${RESIZE_HANDLE_CLASS} -top-1.5 -left-1.5 cursor-nw-resize`}
+                onPointerDown={(e) => handleResizeStart(e, 'nw')}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-base-300">
+              <button
+                className="btn btn-sm btn-ghost"
+                onClick={toggleHTMLView}>
+                Cancel
+              </button>
+              <button 
+                className="btn btn-sm btn-primary"
+                onClick={handleSave}>
+                Save
+              </button>
+            </div>
           </div>
-          <textarea
-            value={htmlContent}
-            onChange={handleHTMLChange}
-            onBlur={applyHTMLChanges}
-            style={{
-              border: '1px solid #ccc',
-              fontFamily: 'monospace',
-              height: 'calc(100% - 40px)',
-              resize: 'none',
-              width: '100%',
-            }}
-          />
-        </div>
+        </Modal>
       )}
     </>
   );
