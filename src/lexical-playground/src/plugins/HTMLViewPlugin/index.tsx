@@ -106,7 +106,6 @@ export function HTMLViewButton(): JSX.Element {
       {isHTMLView && (
         <Modal
           title="HTML View"
-          isOpen={isHTMLView}
           onClose={toggleHTMLView}
           closeOnClickOutside={false}
         >
