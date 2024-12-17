@@ -19,11 +19,12 @@ import type {
   Spread,
 } from 'lexical';
 
-import {$applyNodeReplacement, createEditor, DecoratorNode} from 'lexical';
+import {$applyNodeReplacement, createEditor, DecoratorNode, $getNodeByKey} from 'lexical';
 import * as React from 'react';
 import {Suspense} from 'react';
 import ImageResizer from '../../ui/ImageResizer';
 import {useRef, useState} from 'react';
+import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 
 const InlineImageComponent = React.lazy(() => import('./InlineImageComponent'));
 
