@@ -31,6 +31,7 @@ import {
   KEY_ESCAPE_COMMAND,
   SELECTION_CHANGE_COMMAND,
   $isRangeSelection,
+  $createRangeSelection,
 } from 'lexical';
 import * as React from 'react';
 import {Suspense, useCallback, useEffect, useRef, useState} from 'react';
@@ -44,6 +45,7 @@ import Select from '../../ui/Select';
 import TextInput from '../../ui/TextInput';
 import {$isInlineImageNode, InlineImageNode} from './InlineImageNode';
 import ImageResizer from '../../ui/ImageResizer';
+import {createCommand, LexicalCommand} from 'lexical';
 
 const imageCache = new Set();
 
@@ -181,6 +183,9 @@ export function UpdateInlineImageDialog({
   );
 }
 
+export const EXTERNAL_RESIZE_START: LexicalCommand<null> = createCommand('EXTERNAL_RESIZE_START');
+export const EXTERNAL_RESIZE_END: LexicalCommand<null> = createCommand('EXTERNAL_RESIZE_END');
+
 export default function InlineImageComponent({
   src,
   altText,
@@ -246,7 +251,7 @@ export default function InlineImageComponent({
           // Move focus into nested editor
           const selection = $getSelection();
           if ($isRangeSelection(selection)) {
-            selection.collapseToEnd();
+            selection.anchor.set(selection.focus.key, selection.focus.offset, selection.focus.type);
           }
           event.preventDefault();
           caption.focus();
@@ -271,7 +276,10 @@ export default function InlineImageComponent({
         activeEditorRef.current === caption ||
         buttonRef.current === event.target
       ) {
-        $getSelection()?.collapseToEnd();
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          selection.anchor.set(selection.focus.key, selection.focus.offset, selection.focus.type);
+        }
         editor.update(() => {
           setSelected(true);
           const parentRootElement = editor.getRootElement();
@@ -368,12 +376,12 @@ export default function InlineImageComponent({
 
   const onResizeStart = () => {
     setIsResizing(true);
-    editor.dispatchCommand('EXTERNAL_RESIZE_START', null);
+    editor.dispatchCommand(EXTERNAL_RESIZE_START, null);
   };
 
   const onResizeEnd = (nextWidth: 'inherit' | number, nextHeight: 'inherit' | number) => {
     setIsResizing(false);
-    editor.dispatchCommand('EXTERNAL_RESIZE_END', null);
+    editor.dispatchCommand(EXTERNAL_RESIZE_END, null);
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
       if ($isInlineImageNode(node)) {
