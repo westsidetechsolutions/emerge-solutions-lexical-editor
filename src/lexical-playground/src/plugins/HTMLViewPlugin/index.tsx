@@ -7,14 +7,79 @@
  */
 import {$generateHtmlFromNodes, $generateNodesFromDOM} from '@lexical/html';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$getRoot} from 'lexical';
+import {$getRoot, $insertNodes} from 'lexical';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
 import Modal from '../../ui/Modal';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-markup'; // For HTML syntax
+import 'prismjs/themes/prism.css'; // Base theme
+import {HTMLNode, $createHTMLNode} from '../../nodes/HTMLNode';
 
 type ResizeDirection = 'e' | 'w' | 's' | 'n' | 'se' | 'sw' | 'ne' | 'nw';
 
 const RESIZE_HANDLE_CLASS = "w-3 h-3 absolute bg-primary/20 hover:bg-primary/40 transition-colors";
+
+// Add custom styles for the colors we want
+const CUSTOM_STYLE = `
+.token.tag { color: #A94442; }
+.token.attr-name { color: #FF0000; }
+.token.attr-value { color: #0000FF; }
+
+.html-view {
+  position: relative;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.html-view pre {
+  margin: 0;
+  background: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 16px;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.html-view pre code {
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.html-view textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background: transparent;
+  resize: none;
+  border: none;
+  color: transparent;
+  caret-color: black;
+  z-index: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+`;
 
 export function HTMLViewButton(): JSX.Element {
   const [editor] = useLexicalComposerContext();
@@ -32,8 +97,15 @@ export function HTMLViewButton(): JSX.Element {
   useEffect(() => {
     if (isHTMLView) {
       editor.update(() => {
-        const htmlString = $generateHtmlFromNodes(editor);
-        setHtmlContent(htmlString);
+        const root = $getRoot();
+        // Find HTMLNode if it exists
+        const htmlNode = root.getChildren().find(node => node instanceof HTMLNode);
+        if (htmlNode) {
+          setHtmlContent(htmlNode.__html);
+        } else {
+          // If no HTMLNode exists, generate empty content
+          setHtmlContent('<p><br></p>');
+        }
       });
     }
   }, [isHTMLView, editor]);
@@ -47,12 +119,13 @@ export function HTMLViewButton(): JSX.Element {
   );
 
   const handleSave = useCallback(() => {
-    const parser = new DOMParser();
-    const dom = parser.parseFromString(htmlContent, 'text/html');
     editor.update(() => {
-      const nodes = $generateNodesFromDOM(editor, dom);
-      $getRoot().clear();
-      $getRoot().append(...nodes);
+      const root = $getRoot();
+      root.clear();
+      
+      // Create a single HTMLNode with the raw HTML content
+      const htmlNode = $createHTMLNode(htmlContent);
+      root.append(htmlNode);
     });
     setIsHTMLView(false);
   }, [editor, htmlContent]);
@@ -94,6 +167,16 @@ export function HTMLViewButton(): JSX.Element {
     document.addEventListener('pointerup', handleResizeEnd);
   }, []);
 
+  useEffect(() => {
+    // Add our custom styles once
+    if (!document.getElementById('prism-custom-styles')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'prism-custom-styles';
+      styleEl.innerHTML = CUSTOM_STYLE;
+      document.head.appendChild(styleEl);
+    }
+  }, []);
+
   return (
     <>
       <button
@@ -113,12 +196,20 @@ export function HTMLViewButton(): JSX.Element {
             ref={modalRef}
             className={`flex flex-col w-[800px] h-[500px] relative ${isResizing ? 'select-none' : ''}`}
           >
-            <div className="flex-1 relative mt-2 mb-4">
+            <div className="flex-1 relative mt-2 mb-4 html-view">
               <textarea
-                className="absolute inset-0 w-full h-full resize-none font-mono text-sm p-4 bg-base-200 rounded-lg border border-base-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="absolute inset-0 w-full h-full font-mono text-sm bg-base-200 rounded-lg border border-base-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 value={htmlContent}
                 onChange={handleHTMLChange}
               />
+              <pre aria-hidden={true}>
+                <code 
+                  className="language-markup"
+                  dangerouslySetInnerHTML={{ 
+                    __html: Prism.highlight(htmlContent, Prism.languages.markup, 'markup') 
+                  }} 
+                />
+              </pre>
               {/* Resize handles */}
               <div 
                 className={`${RESIZE_HANDLE_CLASS} -right-1.5 top-1/2 -translate-y-1/2 cursor-e-resize`}

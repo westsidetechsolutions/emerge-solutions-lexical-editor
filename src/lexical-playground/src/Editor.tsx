@@ -25,6 +25,7 @@ import {useLexicalEditable} from '@lexical/react/useLexicalEditable';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {CAN_USE_DOM} from '@/shared/src/canUseDOM';
+import {LexicalComposer} from '@lexical/react/LexicalComposer';
 
 import {createWebsocketProvider} from './collaboration';
 import {useSettings} from './context/SettingsContext';
@@ -67,10 +68,74 @@ import ToolbarPlugin from './plugins/ToolbarPlugin';
 import TwitterPlugin from './plugins/TwitterPlugin';
 import YouTubePlugin from './plugins/YouTubePlugin';
 import ContentEditable from './ui/ContentEditable';
+import {HeadingNode, QuoteNode} from '@lexical/rich-text';
+import {ListNode, ListItemNode} from '@lexical/list';
+import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {TableNode, TableCellNode, TableRowNode} from '@lexical/table';
+import {AutoLinkNode, LinkNode} from '@lexical/link';
+import {OverflowNode} from '@lexical/overflow';
+import {ParagraphNode} from 'lexical';
+import {HashtagNode} from '@lexical/hashtag';
+import {HTMLNode} from './nodes/HTMLNode';
+import {EmojiNode} from './nodes/EmojiNode';
+import {KeywordNode} from './nodes/KeywordNode';
+import {MarkNode} from '@lexical/mark';
+import {HorizontalRuleNode} from '@lexical/react/LexicalHorizontalRuleNode';
+import {ImageNode} from './nodes/ImageNode';
+import {EquationNode} from './nodes/EquationNode';
+import {TweetNode} from './nodes/TweetNode';
+import {InlineImageNode} from './nodes/InlineImageNode/InlineImageNode';
+import {YouTubeNode} from './nodes/YouTubeNode';
+import {FigmaNode} from './nodes/FigmaNode';
+import {StickyNode} from './nodes/StickyNode';
+import {CollapsibleContainerNode, CollapsibleContentNode, CollapsibleTitleNode} from './nodes/CollapsibleNode';
+import {PageBreakNode} from './nodes/PageBreakNode';
+import {LayoutContainerNode, LayoutItemNode} from './nodes/LayoutNode';
 
 const skipCollaborationInit =
   // @ts-expect-error
   window.parent != null && window.parent.frames.right === window;
+
+const editorConfig = {
+  namespace: 'PlaygroundEditor',
+  nodes: [
+    HeadingNode,
+    ListNode,
+    ListItemNode,
+    QuoteNode,
+    CodeNode,
+    TableNode,
+    TableCellNode,
+    TableRowNode,
+    HashtagNode,
+    CodeHighlightNode,
+    AutoLinkNode,
+    LinkNode,
+    OverflowNode,
+    ParagraphNode,
+    HTMLNode,
+    EmojiNode,
+    KeywordNode,
+    MarkNode,
+    HorizontalRuleNode,
+    ImageNode,
+    EquationNode,
+    TweetNode,
+    InlineImageNode,
+    YouTubeNode,
+    CollapsibleContainerNode,
+    CollapsibleContentNode,
+    CollapsibleTitleNode,
+    FigmaNode,
+    StickyNode,
+    PageBreakNode,
+    LayoutContainerNode,
+    LayoutItemNode,
+  ],
+  onError: (error: Error) => {
+    console.error(error);
+  },
+};
 
 export default function Editor(): JSX.Element {
   const {historyState} = useSharedHistoryContext();
@@ -126,7 +191,7 @@ export default function Editor(): JSX.Element {
   }, [isSmallWidthViewport]);
 
   return (
-    <>
+    <LexicalComposer initialConfig={editorConfig}>
       {isRichText && <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />}
       <div
         className={`editor-container ${showTreeView ? 'tree-view' : ''} ${
@@ -234,6 +299,6 @@ export default function Editor(): JSX.Element {
           shouldPreserveNewLinesInMarkdown={shouldPreserveNewLinesInMarkdown}
         />
       </div>
-    </>
+    </LexicalComposer>
   );
 }
