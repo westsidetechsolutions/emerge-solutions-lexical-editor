@@ -246,6 +246,7 @@ function FloatingLinkEditor({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 setIsLinkEditMode(false);
+                editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
               }}
             >
               Cancel
