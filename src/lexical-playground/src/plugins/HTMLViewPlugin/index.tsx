@@ -175,13 +175,15 @@ export function HTMLViewButton(): JSX.Element {
     if (isHTMLView) {
       editor.update(() => {
         const root = $getRoot();
-        // Find HTMLNode if it exists
+        // First try to find if we have an existing HTMLNode
         const htmlNode = root.getChildren().find(node => node instanceof HTMLNode);
+        
         if (htmlNode) {
           setHtmlContent(htmlNode.__html);
         } else {
-          // If no HTMLNode exists, generate empty content
-          setHtmlContent('<p><br></p>');
+          // If no HTMLNode exists, generate HTML from current editor content
+          const htmlString = $generateHtmlFromNodes(editor);
+          setHtmlContent(htmlString || '<p><br></p>');
         }
       });
     }
@@ -200,9 +202,15 @@ export function HTMLViewButton(): JSX.Element {
       const root = $getRoot();
       root.clear();
       
-      // Create a single HTMLNode with the raw HTML content
-      const htmlNode = $createHTMLNode(htmlContent);
-      root.append(htmlNode);
+      // Parse HTML string into DOM
+      const parser = new DOMParser();
+      const dom = parser.parseFromString(htmlContent, 'text/html');
+      
+      // Convert DOM into Lexical nodes
+      const nodes = $generateNodesFromDOM(editor, dom);
+      
+      // Insert the nodes into the editor
+      nodes.forEach(node => root.append(node));
     });
     setIsHTMLView(false);
   }, [editor, htmlContent]);
