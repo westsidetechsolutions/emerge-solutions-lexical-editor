@@ -68,6 +68,7 @@ function TextFormatFloatingToolbar({
               editor.update(() => {
                 const selection = $getSelection();
                 if ($isRangeSelection(selection)) {
+                  editor.dispatchCommand(TOGGLE_LINK_COMMAND, 'https://');
                   setIsLink(true);
                   setIsLinkEditMode(true);
                 }
