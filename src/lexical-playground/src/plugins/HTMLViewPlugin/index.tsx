@@ -31,6 +31,9 @@ const CUSTOM_STYLE = `
   font-family: monospace;
   font-size: 14px;
   line-height: 1.5;
+  height: 100%;
+  max-height: 500px; /* Set a max height */
+  overflow: hidden; /* Prevent outer container from scrolling */
 }
 
 .html-view pre {
@@ -41,12 +44,12 @@ const CUSTOM_STYLE = `
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
   padding: 16px;
   pointer-events: none;
   user-select: none;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-y: scroll; /* Enable vertical scrolling */
   box-sizing: border-box;
 }
 
@@ -78,6 +81,32 @@ const CUSTOM_STYLE = `
   white-space: pre-wrap;
   word-break: break-word;
   box-sizing: border-box;
+  overflow-y: scroll; /* Enable vertical scrolling */
+}
+
+/* Ensure scrollbars match between textarea and pre */
+.html-view textarea::-webkit-scrollbar,
+.html-view pre::-webkit-scrollbar {
+  width: 12px;
+}
+
+.html-view textarea::-webkit-scrollbar-thumb,
+.html-view pre::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.html-view textarea::-webkit-scrollbar-track,
+.html-view pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Sync scrolling between textarea and pre */
+.html-view textarea::-webkit-scrollbar,
+.html-view pre::-webkit-scrollbar {
+  width: 12px;
 }
 `;
 
@@ -167,6 +196,15 @@ export function HTMLViewButton(): JSX.Element {
     document.addEventListener('pointerup', handleResizeEnd);
   }, []);
 
+  // Add scroll sync handler
+  const handleScroll = (event: React.UIEvent<HTMLTextAreaElement>) => {
+    const textarea = event.currentTarget;
+    const pre = textarea.nextElementSibling as HTMLPreElement;
+    if (pre) {
+      pre.scrollTop = textarea.scrollTop;
+    }
+  };
+
   useEffect(() => {
     // Add our custom styles once
     if (!document.getElementById('prism-custom-styles')) {
@@ -192,65 +230,67 @@ export function HTMLViewButton(): JSX.Element {
           onClose={toggleHTMLView}
           closeOnClickOutside={false}
         >
-          <div 
-            ref={modalRef}
-            className={`flex flex-col w-[800px] h-[500px] relative ${isResizing ? 'select-none' : ''}`}
-          >
-            <div className="flex-1 relative mt-2 mb-4 html-view">
-              <textarea
-                className="absolute inset-0 w-full h-full font-mono text-sm bg-base-200 rounded-lg border border-base-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                value={htmlContent}
-                onChange={handleHTMLChange}
-              />
-              <pre aria-hidden={true}>
-                <code 
-                  className="language-markup"
-                  dangerouslySetInnerHTML={{ 
-                    __html: Prism.highlight(htmlContent, Prism.languages.markup, 'markup') 
-                  }} 
+          <div style={{position: 'relative', height: '100%'}}>
+            <style>{CUSTOM_STYLE}</style>
+            <div className="flex flex-col w-[800px] h-[500px] relative">
+              <div className="flex-1 relative mt-2 mb-4 html-view">
+                <textarea
+                  className="absolute inset-0 w-full h-full font-mono text-sm bg-base-200 rounded-lg border border-base-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  value={htmlContent}
+                  onChange={handleHTMLChange}
+                  onScroll={handleScroll}
+                  spellCheck={false}
                 />
-              </pre>
-              {/* Resize handles */}
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} -right-1.5 top-1/2 -translate-y-1/2 cursor-e-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'e')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} -left-1.5 top-1/2 -translate-y-1/2 cursor-w-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'w')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} -top-1.5 left-1/2 -translate-x-1/2 cursor-n-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'n')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} bottom-0 -right-1.5 cursor-se-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'se')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} bottom-0 -left-1.5 cursor-sw-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'sw')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} -top-1.5 -right-1.5 cursor-ne-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'ne')}
-              />
-              <div 
-                className={`${RESIZE_HANDLE_CLASS} -top-1.5 -left-1.5 cursor-nw-resize`}
-                onPointerDown={(e) => handleResizeStart(e, 'nw')}
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-base-300">
-              <button
-                className="btn btn-sm btn-ghost"
-                onClick={toggleHTMLView}>
-                Cancel
-              </button>
-              <button 
-                className="btn btn-sm btn-primary"
-                onClick={handleSave}>
-                Save
-              </button>
+                <pre aria-hidden={true}>
+                  <code 
+                    className="language-markup"
+                    dangerouslySetInnerHTML={{ 
+                      __html: Prism.highlight(htmlContent, Prism.languages.markup, 'markup') 
+                    }} 
+                  />
+                </pre>
+                {/* Resize handles */}
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} -right-1.5 top-1/2 -translate-y-1/2 cursor-e-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'e')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} -left-1.5 top-1/2 -translate-y-1/2 cursor-w-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'w')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} -top-1.5 left-1/2 -translate-x-1/2 cursor-n-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'n')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} bottom-0 -right-1.5 cursor-se-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'se')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} bottom-0 -left-1.5 cursor-sw-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'sw')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} -top-1.5 -right-1.5 cursor-ne-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'ne')}
+                />
+                <div 
+                  className={`${RESIZE_HANDLE_CLASS} -top-1.5 -left-1.5 cursor-nw-resize`}
+                  onPointerDown={(e) => handleResizeStart(e, 'nw')}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-base-300">
+                <button
+                  className="btn btn-sm btn-ghost"
+                  onClick={toggleHTMLView}>
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-sm btn-primary"
+                  onClick={handleSave}>
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </Modal>
