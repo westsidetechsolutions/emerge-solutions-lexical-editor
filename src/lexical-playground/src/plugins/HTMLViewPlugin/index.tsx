@@ -110,6 +110,54 @@ const CUSTOM_STYLE = `
 }
 `;
 
+function formatHTML(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html.trim();
+  
+  // Helper function to recursively format nodes
+  function formatNode(node: Node, level: number): string {
+    if (node.nodeType === 3) { // Text node
+      const text = node.textContent?.trim() || '';
+      return text ? '  '.repeat(level) + text + '\n' : '';
+    }
+    
+    if (node.nodeType !== 1) { // Not an element node
+      return '';
+    }
+
+    const element = node as Element;
+    let result = '  '.repeat(level) + '<' + element.tagName.toLowerCase();
+    
+    // Add attributes
+    Array.from(element.attributes).forEach(attr => {
+      result += ` ${attr.name}="${attr.value}"`;
+    });
+    
+    if (element.children.length || element.textContent?.trim()) {
+      result += '>\n';
+      
+      // Handle text content and child nodes
+      if (element.children.length) {
+        Array.from(element.childNodes).forEach(child => {
+          result += formatNode(child, level + 1);
+        });
+        result += '  '.repeat(level);
+      } else if (element.textContent?.trim()) {
+        result += '  '.repeat(level + 1) + element.textContent.trim() + '\n';
+        result += '  '.repeat(level);
+      }
+      
+      result += '</' + element.tagName.toLowerCase() + '>\n';
+    } else {
+      result += ' />\n';
+    }
+    
+    return result;
+  }
+
+  return formatNode(div, 0);
+}
+
 export function HTMLViewButton(): JSX.Element {
   const [editor] = useLexicalComposerContext();
   const [isHTMLView, setIsHTMLView] = useState(false);
@@ -205,6 +253,10 @@ export function HTMLViewButton(): JSX.Element {
     }
   };
 
+  const handleFormat = useCallback(() => {
+    setHtmlContent(formatHTML(htmlContent));
+  }, [htmlContent]);
+
   useEffect(() => {
     // Add our custom styles once
     if (!document.getElementById('prism-custom-styles')) {
@@ -280,6 +332,11 @@ export function HTMLViewButton(): JSX.Element {
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-base-300">
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={handleFormat}>
+                  Format
+                </button>
                 <button
                   className="btn btn-sm btn-ghost"
                   onClick={toggleHTMLView}>
