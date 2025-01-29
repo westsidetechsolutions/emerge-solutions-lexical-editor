@@ -23,13 +23,17 @@ import {
   SELECTION_CHANGE_COMMAND,
 } from 'lexical';
 import {Dispatch, useCallback, useEffect, useRef, useState} from 'react';
-import * as React from 'react';
+
 import {createPortal} from 'react-dom';
 
 import {getDOMRangeRect} from '../../utils/getDOMRangeRect';
 import {getSelectedNode} from '../../utils/getSelectedNode';
 import {setFloatingElemPosition} from '../../utils/setFloatingElemPosition';
 import {INSERT_INLINE_COMMAND} from '../CommentPlugin';
+import useModal from '../../hooks/useModal';
+import {sanitizeUrl} from '../../utils/url';
+import AssetManager from '../../components/AssetManager';
+import * as React from 'react';
 
 function TextFormatFloatingToolbar({
   editor,
@@ -39,6 +43,7 @@ function TextFormatFloatingToolbar({
   isItalic,
   isUnderline,
   setIsLinkEditMode,
+  setIsLink,
 }: {
   editor: LexicalEditor;
   anchorElem: HTMLElement;
@@ -47,18 +52,59 @@ function TextFormatFloatingToolbar({
   isLink: boolean;
   isUnderline: boolean;
   setIsLinkEditMode: Dispatch<boolean>;
+  setIsLink: Dispatch<boolean>;
 }): JSX.Element {
   const popupCharStylesEditorRef = useRef<HTMLDivElement | null>(null);
+  const [modal, showModal] = useModal();
 
   const insertLink = useCallback(() => {
     if (!isLink) {
-      setIsLinkEditMode(true);
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, 'https://');
+      showModal('Insert Link', (onClose) => (
+        <div className="flex flex-col gap-2">
+          <button
+            className="btn btn-sm btn-primary w-full"
+            onClick={() => {
+              onClose();
+              editor.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                  setIsLink(true);
+                  setIsLinkEditMode(true);
+                }
+              });
+            }}>
+            Enter URL
+          </button>
+
+          <button
+            className="btn btn-sm btn-primary w-full"
+            onClick={() => {
+              onClose();
+              showModal('Select File', (onFileClose) => (
+                <AssetManager
+                  isOpen={true}
+                  onClose={onFileClose}
+                  onSelect={(asset) => {
+                    onFileClose();
+                    setIsLinkEditMode(true);
+                    editor.dispatchCommand(
+                      TOGGLE_LINK_COMMAND,
+                      sanitizeUrl(asset.url),
+                    );
+                  }}
+                  mode="link"
+                />
+              ));
+            }}>
+            Select a File
+          </button>
+        </div>
+      ));
     } else {
       setIsLinkEditMode(false);
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
-  }, [editor, isLink, setIsLinkEditMode]);
+  }, [editor, isLink, setIsLinkEditMode, showModal]);
 
   function mouseMoveListener(e: MouseEvent) {
     if (
@@ -171,46 +217,49 @@ function TextFormatFloatingToolbar({
   }, [editor, $updateTextFormatFloatingToolbar]);
 
   return (
-    <div ref={popupCharStylesEditorRef} className="floating-text-format-popup">
-      {editor.isEditable() && (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            }}
-            className={'popup-item spaced ' + (isBold ? 'active' : '')}
-            aria-label="Format text as bold">
-            <i className="format bold" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            }}
-            className={'popup-item spaced ' + (isItalic ? 'active' : '')}
-            aria-label="Format text as italics">
-            <i className="format italic" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            }}
-            className={'popup-item spaced ' + (isUnderline ? 'active' : '')}
-            aria-label="Format text to underlined">
-            <i className="format underline" />
-          </button>
-          <button
-            type="button"
-            onClick={insertLink}
-            className={'popup-item spaced ' + (isLink ? 'active' : '')}
-            aria-label="Insert link">
-            <i className="format link" />
-          </button>
-        </>
-      )}
-    </div>
+    <>
+      <div ref={popupCharStylesEditorRef} className="floating-text-format-popup">
+        {editor.isEditable() && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+              }}
+              className={'popup-item spaced ' + (isBold ? 'active' : '')}
+              aria-label="Format text as bold">
+              <i className="format bold" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+              }}
+              className={'popup-item spaced ' + (isItalic ? 'active' : '')}
+              aria-label="Format text as italics">
+              <i className="format italic" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
+              }}
+              className={'popup-item spaced ' + (isUnderline ? 'active' : '')}
+              aria-label="Format text to underlined">
+              <i className="format underline" />
+            </button>
+            <button
+              type="button"
+              onClick={insertLink}
+              className={'popup-item spaced ' + (isLink ? 'active' : '')}
+              aria-label="Insert link">
+              <i className="format link" />
+            </button>
+          </>
+        )}
+      </div>
+      {modal}
+    </>
   );
 }
 
@@ -314,6 +363,7 @@ function useFloatingTextFormatToolbar(
       isItalic={isItalic}
       isUnderline={isUnderline}
       setIsLinkEditMode={setIsLinkEditMode}
+      setIsLink={setIsLink}
     />,
     anchorElem,
   );
