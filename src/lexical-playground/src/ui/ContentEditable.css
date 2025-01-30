@@ -29,7 +29,7 @@
 }
 
 .html-container {
-  pointer-events: none; /* Make non-editable */
+  pointer-events: none; /* Make container non-editable */
 }
 
 .editable-text {

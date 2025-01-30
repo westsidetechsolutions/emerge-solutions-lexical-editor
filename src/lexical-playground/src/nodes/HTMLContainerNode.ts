@@ -1,8 +1,6 @@
 import { ElementNode, SerializedElementNode, Spread } from 'lexical';
-import { DecoratorNode } from 'lexical';
-import * as React from 'react';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LexicalNode } from 'lexical';
+import { EditableTextNode } from './EditableTextNode';
 
 // Define the serialized format
 export type SerializedHTMLContainerNode = Spread<{
@@ -41,7 +39,6 @@ export class HTMLContainerNode extends ElementNode {
 
   updateDOM(prevNode: HTMLContainerNode, dom: HTMLElement): boolean {
     if (prevNode.__tag !== this.__tag || prevNode.__style !== this.__style) {
-      dom.tagName.toLowerCase() !== this.__tag && (dom.tagName.toLowerCase() === this.__tag);
       dom.style.cssText = this.__style;
       return true;
     }
@@ -58,6 +55,7 @@ export class HTMLContainerNode extends ElementNode {
       type: 'html-container',
       tag: this.__tag,
       style: this.__style,
+      version: 1,
     };
   }
 
@@ -68,9 +66,8 @@ export class HTMLContainerNode extends ElementNode {
   }
 
   // Prevent deletion of the container node
-  remove() {
-    // Do not allow removal
-    return false;
+  remove(): boolean {
+    return false; // Do not allow removal
   }
 
   // Prevent merging with adjacent nodes
@@ -93,4 +90,4 @@ export class HTMLContainerNode extends ElementNode {
   }
 
   // Override other methods as necessary to protect the structure
-} 
+}

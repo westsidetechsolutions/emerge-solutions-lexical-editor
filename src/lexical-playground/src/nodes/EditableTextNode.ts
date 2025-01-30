@@ -1,4 +1,4 @@
-import { TextNode, SerializedTextNode, Spread } from 'lexical';
+import { TextNode, SerializedTextNode, Spread, TextFormatType } from 'lexical';
 
 // Define the serialized format
 export type SerializedEditableTextNode = Spread<{
@@ -27,5 +27,14 @@ export class EditableTextNode extends TextNode {
   static importJSON(serializedNode: SerializedEditableTextNode): EditableTextNode {
     const text = serializedNode.text;
     return new EditableTextNode(text);
+  }
+
+  // Allow formatting to be applied and removed
+  applyFormat(format: TextFormatType): void {
+    this.setFormat(format);
+  }
+
+  removeFormat(format: TextFormatType): void {
+    this.setFormat(0);
   }
 } 
