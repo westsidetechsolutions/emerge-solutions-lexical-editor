@@ -91,13 +91,20 @@ import {StickyNode} from './nodes/StickyNode';
 import {CollapsibleContainerNode, CollapsibleContentNode, CollapsibleTitleNode} from './nodes/CollapsibleNode';
 import {PageBreakNode} from './nodes/PageBreakNode';
 import {LayoutContainerNode, LayoutItemNode} from './nodes/LayoutNode';
+import { HTMLContainerNode } from './nodes/HTMLContainerNode';
+import { EditableTextNode } from './nodes/EditableTextNode';
 
 const skipCollaborationInit =
   // @ts-expect-error
   window.parent != null && window.parent.frames.right === window;
 
+const theme = {
+  // Define your theme here
+};
+
 const editorConfig = {
   namespace: 'PlaygroundEditor',
+  theme,
   nodes: [
     HeadingNode,
     ListNode,
@@ -131,6 +138,8 @@ const editorConfig = {
     PageBreakNode,
     LayoutContainerNode,
     LayoutItemNode,
+    HTMLContainerNode,
+    EditableTextNode,
   ],
   onError: (error: Error) => {
     console.error(error);
