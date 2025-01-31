@@ -72,22 +72,43 @@ header h1 {
   border-top-right-radius: 10px;
 }
 
-.editor-scroller {
-  min-height: 500px;
-  border: 0;
+.editor-container {
   display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
   position: relative;
-  outline: 0;
-  z-index: 0;
-  overflow: auto;
-  resize: vertical;
+}
+
+.editor-scroller {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  box-sizing: border-box;
+  position: relative;
 }
 
 .editor {
-  flex: auto;
+  min-height: 100%;
+  width: 100%;
   position: relative;
-  resize: vertical;
-  z-index: -1;
+}
+
+.ContentEditable__root {
+  border: 1px solid #ddd;
+  padding: 10px;
+  min-height: 150px;
+  position: relative;
+}
+
+.ContentEditable__placeholder {
+  color: #999;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
 .test-recorder-output {

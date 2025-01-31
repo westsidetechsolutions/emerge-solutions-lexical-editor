@@ -9,7 +9,8 @@
 .ContentEditable__root {
   border: 1px solid #ddd;
   padding: 10px;
-  min-height: 150px;
+  min-height: 300px;
+  position: relative;
 }
 @media (max-width: 1025px) {
   .ContentEditable__root {
@@ -20,6 +21,11 @@
 
 .ContentEditable__placeholder {
   color: #999;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  pointer-events: none;
+  user-select: none;
 }
 @media (max-width: 1025px) {
   .ContentEditable__placeholder {
