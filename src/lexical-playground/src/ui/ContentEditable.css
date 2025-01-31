@@ -7,13 +7,10 @@
  *
  */
 .ContentEditable__root {
-  border: 0;
-  font-size: 15px;
-  display: block;
+  border: 1px solid #ddd;
+  padding: 10px;
+  min-height: 300px;
   position: relative;
-  outline: 0;
-  padding: 8px 28px 40px;
-  min-height: 150px;
 }
 @media (max-width: 1025px) {
   .ContentEditable__root {
@@ -23,22 +20,25 @@
 }
 
 .ContentEditable__placeholder {
-  font-size: 15px;
   color: #999;
-  overflow: hidden;
   position: absolute;
-  text-overflow: ellipsis;
-  top: 8px;
-  left: 28px;
-  right: 28px;
-  user-select: none;
-  white-space: nowrap;
-  display: inline-block;
+  top: 10px;
+  left: 10px;
   pointer-events: none;
+  user-select: none;
 }
 @media (max-width: 1025px) {
   .ContentEditable__placeholder {
     left: 8px;
     right: 8px;
   }
+}
+
+.html-container {
+  pointer-events: none; /* Make container non-editable */
+}
+
+.editable-text {
+  pointer-events: auto; /* Re-enable for text */
+  outline: none;
 }

@@ -5,7 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import {$generateHtmlFromNodes, $generateNodesFromDOM} from '@lexical/html';
+import {
+  $generateHtmlFromNodes,
+  $generateNodesFromDOM,
+} from '@lexical/html';
+import { LexicalNode } from 'lexical';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {$getRoot, $insertNodes} from 'lexical';
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -15,6 +19,8 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-markup'; // For HTML syntax
 import 'prismjs/themes/prism.css'; // Base theme
 import {HTMLNode, $createHTMLNode} from '../../nodes/HTMLNode';
+import { HTMLContainerNode } from '../../nodes/HTMLContainerNode';
+import { EditableTextNode } from '../../nodes/EditableTextNode';
 
 type ResizeDirection = 'e' | 'w' | 's' | 'n' | 'se' | 'sw' | 'ne' | 'nw';
 
@@ -207,7 +213,7 @@ export function HTMLViewButton(): JSX.Element {
       const dom = parser.parseFromString(htmlContent, 'text/html');
       
       // Convert DOM into Lexical nodes
-      const nodes = $generateNodesFromDOM(editor, dom);
+      const nodes = convertDOMToLexical(dom.body);
       
       // Insert the nodes into the editor
       nodes.forEach(node => root.append(node));
@@ -274,6 +280,36 @@ export function HTMLViewButton(): JSX.Element {
       document.head.appendChild(styleEl);
     }
   }, []);
+
+  // Reuse the convertDOMToLexical function or import it if defined elsewhere
+  const convertDOMToLexical = (domNode: Node): LexicalNode[] => {
+    const nodes: LexicalNode[] = [];
+
+    domNode.childNodes.forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const textContent = child.textContent?.trim();
+        if (textContent) {
+          nodes.push(new EditableTextNode(textContent));
+        }
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const element = child as HTMLElement;
+        const tagName = element.tagName.toLowerCase();
+        const style = element.getAttribute('style') || '';
+
+        // Create a container node for the element
+        const containerNode = new HTMLContainerNode(tagName, style);
+        const childNodes = convertDOMToLexical(element);
+
+        if (childNodes.length > 0) {
+          childNodes.forEach((node) => containerNode.append(node));
+        }
+
+        nodes.push(containerNode);
+      }
+    });
+
+    return nodes;
+  };
 
   return (
     <>
