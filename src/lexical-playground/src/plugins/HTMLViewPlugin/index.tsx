@@ -179,17 +179,9 @@ export function HTMLViewButton(): JSX.Element {
   useEffect(() => {
     if (isHTMLView) {
       editor.update(() => {
-        const root = $getRoot();
-        // First try to find if we have an existing HTMLNode
-        const htmlNode = root.getChildren().find(node => node instanceof HTMLNode);
-        
-        if (htmlNode) {
-          setHtmlContent(htmlNode.__html);
-        } else {
-          // If no HTMLNode exists, generate HTML from current editor content
-          const htmlString = $generateHtmlFromNodes(editor);
-          setHtmlContent(htmlString || '<p><br></p>');
-        }
+        // Generate HTML from current editor content
+        const htmlString = $generateHtmlFromNodes(editor);
+        setHtmlContent(htmlString || '<p><br></p>');
       });
     }
   }, [isHTMLView, editor]);
@@ -205,17 +197,65 @@ export function HTMLViewButton(): JSX.Element {
   const handleSave = useCallback(() => {
     editor.update(() => {
       const root = $getRoot();
-      root.clear();
-      
+
+      // Log the current children before removal
+      console.log('Before removal:', root.getChildren());
+
+      // Explicitly remove each child node
+      root.getChildren().forEach(child => {
+        console.log('Removing child:', child);
+        child.remove(); // Now works for HTMLContainerNode
+      });
+
+      // Log after removal to confirm
+      console.log('After removal:', root.getChildren());
+
       // Parse HTML string into DOM
       const parser = new DOMParser();
       const dom = parser.parseFromString(htmlContent, 'text/html');
       
-      // Convert DOM into Lexical nodes
+      // Custom conversion function to preserve styles
+      const convertDOMToLexical = (domNode: Node): LexicalNode[] => {
+        const nodes: LexicalNode[] = [];
+        
+        domNode.childNodes.forEach((child) => {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const textContent = child.textContent?.trim();
+            if (textContent) {
+              nodes.push($createTextNode(textContent));
+            }
+          } else if (child.nodeType === Node.ELEMENT_NODE) {
+            const element = child as HTMLElement;
+            const tagName = element.tagName.toLowerCase();
+            const style = element.getAttribute('style') || '';
+            
+            // Create a container node that preserves styles
+            const containerNode = new HTMLContainerNode(tagName, style);
+            const childNodes = convertDOMToLexical(element);
+            
+            if (childNodes.length > 0) {
+              childNodes.forEach((node) => containerNode.append(node));
+            }
+            
+            nodes.push(containerNode);
+          }
+        });
+        
+        return nodes;
+      };
+
+      // Convert and insert nodes
       const nodes = convertDOMToLexical(dom.body);
-      
-      // Insert the nodes into the editor
-      nodes.forEach(node => root.append(node));
+      if (nodes.length > 0) {
+        console.log('Nodes to append:', nodes);
+        nodes.forEach(node => {
+          console.log('Appending node:', node);
+          root.append(node);
+        });
+      } else {
+        console.log('No nodes to append. Adding an empty paragraph.');
+        root.append($createParagraphNode());
+      }
     });
     setIsHTMLView(false);
   }, [editor, htmlContent]);
@@ -279,54 +319,6 @@ export function HTMLViewButton(): JSX.Element {
       document.head.appendChild(styleEl);
     }
   }, []);
-
-  const convertDOMToLexical = (domNode: Node): LexicalNode[] => {
-    const nodes: LexicalNode[] = [];
-
-    domNode.childNodes.forEach((child) => {
-      if (child.nodeType === Node.TEXT_NODE) {
-        const textContent = child.textContent?.trim();
-        if (textContent) {
-          nodes.push($createTextNode(textContent));
-        }
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        const element = child as HTMLElement;
-        const tagName = element.tagName.toLowerCase();
-        const style = element.getAttribute('style') || '';
-        
-        // Handle text formatting elements
-        if (['strong', 'b', 'em', 'i', 'u'].includes(tagName)) {
-          const textContent = element.textContent?.trim();
-          if (textContent) {
-            const textNode = $createTextNode(textContent);
-            
-            // Apply appropriate formatting
-            if (tagName === 'strong' || tagName === 'b') textNode.toggleFormat('bold');
-            if (tagName === 'em' || tagName === 'i') textNode.toggleFormat('italic');
-            if (tagName === 'u') textNode.toggleFormat('underline');
-            
-            // Preserve element styles
-            if (style) {
-              textNode.setStyle(style);
-            }
-            
-            nodes.push(textNode);
-          }
-        } else {
-          // Handle container elements
-          const containerNode = new HTMLContainerNode(tagName, style);
-          const childNodes = convertDOMToLexical(element);
-          
-          if (childNodes.length > 0) {
-            childNodes.forEach((node) => containerNode.append(node));
-          }
-          nodes.push(containerNode);
-        }
-      }
-    });
-
-    return nodes;
-  };
 
   return (
     <>

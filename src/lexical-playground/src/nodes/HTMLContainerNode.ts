@@ -65,11 +65,6 @@ export class HTMLContainerNode extends ElementNode {
     return new HTMLContainerNode(tag, style);
   }
 
-  // Prevent deletion of the container node
-  remove(): boolean {
-    return false; // Do not allow removal
-  }
-
   // Prevent merging with adjacent nodes
   canMergeWith(node: LexicalNode): boolean {
     return false;
