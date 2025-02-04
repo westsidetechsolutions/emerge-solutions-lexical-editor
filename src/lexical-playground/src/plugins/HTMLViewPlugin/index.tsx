@@ -9,9 +9,8 @@ import {
   $generateHtmlFromNodes,
   $generateNodesFromDOM,
 } from '@lexical/html';
-import { LexicalNode } from 'lexical';
+import { $createTextNode, $getRoot, $insertNodes, LexicalNode, $createParagraphNode } from 'lexical';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$getRoot, $insertNodes} from 'lexical';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
 import Modal from '../../ui/Modal';
@@ -281,7 +280,6 @@ export function HTMLViewButton(): JSX.Element {
     }
   }, []);
 
-  // Reuse the convertDOMToLexical function or import it if defined elsewhere
   const convertDOMToLexical = (domNode: Node): LexicalNode[] => {
     const nodes: LexicalNode[] = [];
 
@@ -289,22 +287,41 @@ export function HTMLViewButton(): JSX.Element {
       if (child.nodeType === Node.TEXT_NODE) {
         const textContent = child.textContent?.trim();
         if (textContent) {
-          nodes.push(new EditableTextNode(textContent));
+          nodes.push($createTextNode(textContent));
         }
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         const element = child as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         const style = element.getAttribute('style') || '';
-
-        // Create a container node for the element
-        const containerNode = new HTMLContainerNode(tagName, style);
-        const childNodes = convertDOMToLexical(element);
-
-        if (childNodes.length > 0) {
-          childNodes.forEach((node) => containerNode.append(node));
+        
+        // Handle text formatting elements
+        if (['strong', 'b', 'em', 'i', 'u'].includes(tagName)) {
+          const textContent = element.textContent?.trim();
+          if (textContent) {
+            const textNode = $createTextNode(textContent);
+            
+            // Apply appropriate formatting
+            if (tagName === 'strong' || tagName === 'b') textNode.toggleFormat('bold');
+            if (tagName === 'em' || tagName === 'i') textNode.toggleFormat('italic');
+            if (tagName === 'u') textNode.toggleFormat('underline');
+            
+            // Preserve element styles
+            if (style) {
+              textNode.setStyle(style);
+            }
+            
+            nodes.push(textNode);
+          }
+        } else {
+          // Handle container elements
+          const containerNode = new HTMLContainerNode(tagName, style);
+          const childNodes = convertDOMToLexical(element);
+          
+          if (childNodes.length > 0) {
+            childNodes.forEach((node) => containerNode.append(node));
+          }
+          nodes.push(containerNode);
         }
-
-        nodes.push(containerNode);
       }
     });
 
