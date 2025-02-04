@@ -9,7 +9,7 @@ import {
   $generateHtmlFromNodes,
   $generateNodesFromDOM,
 } from '@lexical/html';
-import { $createTextNode, $getRoot, $insertNodes, LexicalNode, $createParagraphNode } from 'lexical';
+import { $createTextNode, $getRoot, $insertNodes, LexicalNode, $createParagraphNode, $isTextNode } from 'lexical';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
@@ -198,17 +198,7 @@ export function HTMLViewButton(): JSX.Element {
     editor.update(() => {
       const root = $getRoot();
 
-      // Log the current children before removal
-      console.log('Before removal:', root.getChildren());
-
-      // Explicitly remove each child node
-      root.getChildren().forEach(child => {
-        console.log('Removing child:', child);
-        child.remove(); // Now works for HTMLContainerNode
-      });
-
-      // Log after removal to confirm
-      console.log('After removal:', root.getChildren());
+      root.clear();
 
       // Parse HTML string into DOM
       const parser = new DOMParser();
@@ -217,7 +207,7 @@ export function HTMLViewButton(): JSX.Element {
       // Custom conversion function to preserve styles
       const convertDOMToLexical = (domNode: Node): LexicalNode[] => {
         const nodes: LexicalNode[] = [];
-        
+    
         domNode.childNodes.forEach((child) => {
           if (child.nodeType === Node.TEXT_NODE) {
             const textContent = child.textContent?.trim();
@@ -229,18 +219,38 @@ export function HTMLViewButton(): JSX.Element {
             const tagName = element.tagName.toLowerCase();
             const style = element.getAttribute('style') || '';
             
-            // Create a container node that preserves styles
-            const containerNode = new HTMLContainerNode(tagName, style);
-            const childNodes = convertDOMToLexical(element);
-            
-            if (childNodes.length > 0) {
-              childNodes.forEach((node) => containerNode.append(node));
+            if (['strong', 'b', 'em', 'i', 'u'].includes(tagName)) {
+              // Handle nested formatting by recursively processing child nodes
+              const childNodes = convertDOMToLexical(element);
+              
+              childNodes.forEach(node => {
+                if ($isTextNode(node)) {
+                  // Apply formatting based on current tag
+                  if (tagName === 'strong' || tagName === 'b') node.toggleFormat('bold');
+                  if (tagName === 'em' || tagName === 'i') node.toggleFormat('italic');
+                  if (tagName === 'u') node.toggleFormat('underline');
+                  
+                  // Preserve element styles
+                  if (style) {
+                    node.setStyle(style);
+                  }
+                }
+              });
+              
+              nodes.push(...childNodes);
+            } else {
+              // Handle container elements
+              const containerNode = new HTMLContainerNode(tagName, style);
+              const childNodes = convertDOMToLexical(element);
+              
+              if (childNodes.length > 0) {
+                childNodes.forEach((node) => containerNode.append(node));
+              }
+              nodes.push(containerNode);
             }
-            
-            nodes.push(containerNode);
           }
         });
-        
+    
         return nodes;
       };
 
